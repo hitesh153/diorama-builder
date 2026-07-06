@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   createBuilderState,
   builderReducer,
-  type BuilderState,
   type RoomPlacement,
 } from "./builderStore";
 
@@ -180,7 +179,7 @@ describe("builderReducer", () => {
 
   describe("overlap detection", () => {
     it("prevents adding a room that overlaps an existing one", () => {
-      let state = createBuilderState([room("a", 0, 0, 3, 3)]);
+      const state = createBuilderState([room("a", 0, 0, 3, 3)]);
       const next = builderReducer(state, {
         type: "ADD_ROOM",
         room: room("b", 1, 1, 2, 2), // overlaps a
@@ -190,7 +189,7 @@ describe("builderReducer", () => {
     });
 
     it("allows adding a room that does not overlap", () => {
-      let state = createBuilderState([room("a", 0, 0, 2, 2)]);
+      const state = createBuilderState([room("a", 0, 0, 2, 2)]);
       const next = builderReducer(state, {
         type: "ADD_ROOM",
         room: room("b", 3, 0, 2, 2), // no overlap
@@ -199,7 +198,7 @@ describe("builderReducer", () => {
     });
 
     it("prevents moving a room into an overlapping position", () => {
-      let state = createBuilderState([room("a", 0, 0, 2, 2), room("b", 4, 0, 2, 2)]);
+      const state = createBuilderState([room("a", 0, 0, 2, 2), room("b", 4, 0, 2, 2)]);
       const next = builderReducer(state, {
         type: "MOVE_ROOM",
         roomId: "b-4-0",
@@ -210,7 +209,7 @@ describe("builderReducer", () => {
     });
 
     it("prevents resizing a room into an overlapping size", () => {
-      let state = createBuilderState([room("a", 0, 0, 2, 2), room("b", 3, 0, 2, 2)]);
+      const state = createBuilderState([room("a", 0, 0, 2, 2), room("b", 3, 0, 2, 2)]);
       const next = builderReducer(state, {
         type: "RESIZE_ROOM",
         roomId: "a-0-0",

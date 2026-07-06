@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ROOM_PRESETS, getPreset, getFurniture, getFloorWall, type RoomPreset } from "./roomPresets";
+import { ROOM_PRESETS, getPreset, getFurniture, getFloorWall } from "./roomPresets";
 import { FLOOR_STYLES } from "./floorTexture";
 
 const THEME_IDS = ["neon-dark", "warm-office", "cyberpunk", "minimal"];

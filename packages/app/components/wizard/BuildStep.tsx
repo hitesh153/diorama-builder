@@ -1,7 +1,7 @@
 "use client";
 
 import { useReducer, useState, useCallback, useEffect } from "react";
-import { ROOM_PRESETS, findNextPosition, getFloorWall, type RoomConfig, type CatalogItem, type FloorStyle } from "@diorama/engine";
+import { ROOM_PRESETS, findNextPosition, getFloorWall, type RoomConfig, type FloorStyle } from "@diorama/engine";
 import { builderReducer, createBuilderState } from "@diorama/ui/src/builderStore";
 import { PresetPalette } from "./PresetPalette";
 import { AgentAssignPanel } from "./AgentAssignPanel";

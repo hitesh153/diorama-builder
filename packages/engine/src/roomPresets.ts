@@ -45,7 +45,7 @@ export interface RoomPreset {
 }
 
 // Theme IDs matching the 4 themes in plugins/themes
-const THEME_IDS = ["neon-dark", "warm-office", "cyberpunk", "minimal"] as const;
+export const THEME_IDS = ["neon-dark", "warm-office", "cyberpunk", "minimal"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
 const KF = "/models/kenney-furniture/";

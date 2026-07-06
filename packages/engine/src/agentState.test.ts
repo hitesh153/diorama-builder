@@ -3,7 +3,6 @@ import {
   createAgentState,
   updateAgentState,
   computeIdlePose,
-  type AgentState,
 } from "./agentState";
 
 describe("createAgentState", () => {

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#0d1520"/>
+  <!-- isometric room diorama -->
+  <path d="M16 5 L27 11 L16 17 L5 11 Z" fill="#8090c0"/>
+  <path d="M5 11 L16 17 L16 28 L5 22 Z" fill="#4a5a8a"/>
+  <path d="M27 11 L16 17 L16 28 L27 22 Z" fill="#2a3a60"/>
+  <!-- agent dot -->
+  <circle cx="16" cy="12" r="2.2" fill="#0d1520"/>
+  <circle cx="16" cy="11.6" r="1.5" fill="#6bff9e"/>
+</svg>

@@ -23,15 +23,35 @@ const PIPELINE_SEQUENCE: Array<{ type: string; room: string; agent: string; payl
   { type: "aegis.scribe.pattern.promoted", room: "archive", agent: "scribe", payload: { patternName: "retry-logic", repoId: "main-repo" } },
 ];
 
-export function createMockEventStream(count: number): DioramaEvent[] {
+/**
+ * Generate a demo event stream. When `roomLabels` is provided (the user's
+ * actual built rooms), the mock pipeline's room names are remapped onto them
+ * so demo events light up rooms that really exist in the world.
+ */
+export function createMockEventStream(count: number, roomLabels?: string[]): DioramaEvent[] {
   const events: DioramaEvent[] = [];
   let timestamp = Date.now();
+
+  // Stable mapping: each distinct mock room → a real room, round-robin in
+  // order of first appearance.
+  let roomFor: (mockRoom: string) => string = (r) => r;
+  if (roomLabels && roomLabels.length > 0) {
+    const mapping = new Map<string, string>();
+    let next = 0;
+    roomFor = (mockRoom: string) => {
+      if (!mapping.has(mockRoom)) {
+        mapping.set(mockRoom, roomLabels[next % roomLabels.length]);
+        next++;
+      }
+      return mapping.get(mockRoom)!;
+    };
+  }
 
   for (let i = 0; i < count && i < PIPELINE_SEQUENCE.length; i++) {
     const template = PIPELINE_SEQUENCE[i];
     events.push({
       type: template.type,
-      room: template.room,
+      room: roomFor(template.room),
       agent: template.agent,
       payload: template.payload,
       timestamp,

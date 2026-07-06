@@ -1,16 +1,20 @@
 # Diorama
 
-Configurable 3D workspace visualizer for [OpenClaw](https://github.com/openclaw). Build custom layouts for your AI agents with a spatial design tool — add rooms, choose themes, and watch your office take shape in real time.
+Build 3D worlds for your AI agents. Design an office with a spatial editor — rooms, furniture, themes — connect your agent runtime, and watch your agents work in a live 3D scene.
 
-## Quick Start
+Works with [OpenClaw](https://github.com/openclaw) gateways today; a generic event protocol and more connectors (Codex sessions, Claude Code) are on the roadmap (see `docs/specs/diorama-v3-world-builder.md`).
+
+## Quick Start (from source)
+
+> Not yet published to npm — run from a checkout for now.
 
 ```bash
-npx diorama init my-office
-cd my-office
-npx diorama dev
+git clone https://github.com/hitesh153/diorama-builder && cd diorama-builder
+npm install
+npx next dev -p 3456 --dir packages/app   # or: cd packages/app && npx next dev -p 3456
 ```
 
-This scaffolds a project with a `diorama.config.json` that drives the entire layout.
+Open http://localhost:3456 — with no config present you'll land in the wizard. Once published, this becomes `npx diorama init my-office && npx diorama dev`.
 
 ## How It Works
 
@@ -68,11 +72,12 @@ Environment variables (like `$OPENCLAW_TOKEN`) are resolved at runtime.
 
 ## Onboarding Wizard
 
-Running `npx diorama` without a config launches a 3-step wizard:
+Running the app without a config launches a 4-step wizard:
 
 1. **Connect** — Enter gateway URL + token, or use demo data
-2. **Build Your Office** — Live 3D viewport + sidebar with room presets, agent assignment, and theme switcher. Click a preset to auto-place a room, see it appear instantly in 3D.
-3. **Launch** — Review and save your layout
+2. **Build Your Office** — Live 3D viewport + sidebar with room presets, furniture catalog, floor styles, and theme switcher. Click a preset to auto-place a room, see it appear instantly in 3D. Drag to move, 8-handle resize, undo/redo.
+3. **Configure Agents** — Seat assignment, room access, and energy level per agent
+4. **Launch** — Review and save your layout
 
 ## Templates
 
@@ -129,7 +134,7 @@ Browser
 
 ```bash
 npm install
-npm test          # run all 192 tests
+npm test          # run the full suite (451+ tests)
 npm run typecheck # type checking
 ```
 

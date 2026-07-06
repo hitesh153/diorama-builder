@@ -74,6 +74,19 @@ export {
 } from "./roomGraph";
 export type { RoomGraph, RoomNode, RoomEdge, DoorWorldPos } from "./roomGraph";
 
+// Seating
+export {
+  resolveRoomFurniture,
+  isSeatingItem,
+  furnitureDisplayName,
+  buildSeatOptions,
+  resolveSeatRef,
+} from "./seating";
+export type { SeatOption, ResolvedSeat } from "./seating";
+
+// Room Matching
+export { normalizeRoomName, matchRoomIndex } from "./roomMatch";
+
 // Activity State
 export {
   deriveActivity,

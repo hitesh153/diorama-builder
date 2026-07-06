@@ -116,6 +116,7 @@ export default function WizardPage() {
             <AgentBehaviorStep
               agents={state.agents}
               rooms={state.rooms}
+              theme={state.theme}
               initialBehaviors={state.agentBehaviors}
               onComplete={(agentBehaviors) => {
                 setState((s) => ({ ...s, agentBehaviors }));

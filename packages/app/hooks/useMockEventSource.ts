@@ -4,13 +4,17 @@ import { useEffect, useRef } from "react";
 import { type EventBus } from "@diorama/engine";
 import { createMockEventStream } from "@diorama/plugins";
 
-export function useMockEventSource(eventBus: EventBus, active: boolean) {
+export function useMockEventSource(eventBus: EventBus, active: boolean, roomLabels?: string[]) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Room labels only matter on (re)start of the stream — keep a ref so the
+  // effect doesn't restart on every render from a fresh array identity.
+  const roomLabelsRef = useRef<string[] | undefined>(roomLabels);
+  roomLabelsRef.current = roomLabels;
 
   useEffect(() => {
     if (!active) return;
 
-    const events = createMockEventStream(20);
+    const events = createMockEventStream(20, roomLabelsRef.current);
     let index = 0;
 
     function dispatchNext() {

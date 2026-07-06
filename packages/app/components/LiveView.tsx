@@ -11,7 +11,11 @@ import {
   toWorld,
   deriveActivity,
   formatEventLabel,
-  getFurniture,
+  resolveRoomFurniture,
+  isSeatingItem,
+  resolveSeatRef,
+  matchRoomIndex,
+  normalizeRoomName,
   ACTIVITY_TIMEOUT_MS,
   type DioramaConfig,
   type AgentState,
@@ -30,18 +34,10 @@ const THEME_COLORS: Record<string, { accent: string; floor: string }> = {
 
 const AGENT_COLORS = ["#60a0ff", "#ff6090", "#60ffa0", "#ffa060", "#a060ff", "#ff60ff", "#60ffff"];
 const GRID_UNIT = 200;
-
-const SEATING_KEYWORDS = ["chair", "couch", "sofa", "stool", "lounge"];
-
-function isSeating(item: FurnitureItem): boolean {
-  const label = (item.label ?? "").toLowerCase();
-  return SEATING_KEYWORDS.some((k) => label.includes(k));
-}
-
-/** Normalize a label for comparison: lowercase, spaces to hyphens. */
-function normalizeLabel(label: string): string {
-  return label.toLowerCase().replace(/\s+/g, "-");
-}
+/** World units per grid cell (GRID_UNIT canvas units × 0.018 world scale). */
+const GRID_WORLD = 3.6;
+/** Golden angle — spreads standing agents evenly around the room center. */
+const GOLDEN_ANGLE = 2.399963;
 
 /**
  * Get the world-space center of a room. Room3D uses generateFloor which calls
@@ -89,11 +85,14 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
     if (!isDemoMode) connect();
   }, [connect, isDemoMode]);
 
-  useMockEventSource(eventBus, isDemoMode);
+  useMockEventSource(eventBus, isDemoMode, config.rooms.map((r) => r.label));
 
-  // Calculate rooms centroid for camera (same logic as BuildStep3D)
-  const roomsCenter = useMemo<[number, number, number]>(() => {
-    if (config.rooms.length === 0) return [0, 0, 0];
+  // Rooms centroid + bounding radius for camera framing
+  const { roomsCenter, fitRadius } = useMemo<{
+    roomsCenter: [number, number, number];
+    fitRadius: number;
+  }>(() => {
+    if (config.rooms.length === 0) return { roomsCenter: [0, 0, 0], fitRadius: 12 };
     let minGx = Infinity, minGy = Infinity, maxGx = -Infinity, maxGy = -Infinity;
     for (const r of config.rooms) {
       minGx = Math.min(minGx, r.position[0]);
@@ -104,7 +103,11 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
     const cx = ((minGx + maxGx) / 2) * GRID_UNIT;
     const cy = ((minGy + maxGy) / 2) * GRID_UNIT;
     const [wx, , wz] = toWorld(cx, cy);
-    return [wx, 0, wz];
+    // Half-diagonal of the world bounding box, in world units
+    const halfW = ((maxGx - minGx) / 2) * GRID_WORLD;
+    const halfH = ((maxGy - minGy) / 2) * GRID_WORLD;
+    const radius = Math.max(Math.hypot(halfW, halfH), 6);
+    return { roomsCenter: [wx, 0, wz], fitRadius: radius };
   }, [config.rooms]);
 
   // Agent states
@@ -117,75 +120,108 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
   const [activitySnapshot, setActivitySnapshot] = useState<Map<string, ActivityRecord>>(new Map());
   const [feedEntries, setFeedEntries] = useState<FeedEntry[]>([]);
 
-  // Initialize agents — auto-seat in chairs
+  // Initialize agents — explicit seats first, then auto-seat, then stand
   useEffect(() => {
-    const agents: Array<{ id: string; state: AgentState; color: string; energy: number }> = [];
     const agentEntries = Object.entries(config.agents);
 
-    // Build a pool of seats per room
-    const seatPool = new Map<number, Array<{ pos: [number, number, number]; rotation: number }>>();
+    // Seat pool per room over *resolved* furniture (explicit or preset),
+    // keyed by furniture index so explicit refs and auto-assignment never
+    // double-book the same chair.
+    const seatPool = new Map<number, Array<{ furnitureIndex: number; pos: [number, number, number]; rotation: number }>>();
     config.rooms.forEach((room, roomIdx) => {
-      const furniture = (room.furniture && room.furniture.length > 0)
-        ? room.furniture
-        : getFurniture(room.preset, config.theme);
+      const furniture = resolveRoomFurniture(room, config.theme);
       const roomCenter = getRoomWorldCenter(room);
-      const seats: Array<{ pos: [number, number, number]; rotation: number }> = [];
-      for (const item of furniture) {
-        if (isSeating(item)) {
+      const seats: Array<{ furnitureIndex: number; pos: [number, number, number]; rotation: number }> = [];
+      furniture.forEach((item, furnitureIndex) => {
+        if (isSeatingItem(item)) {
           seats.push({
+            furnitureIndex,
             pos: getSeatWorldPos(roomCenter, item),
             rotation: item.rotation ? item.rotation[1] : 0,
           });
         }
-      }
+      });
       seatPool.set(roomIdx, seats);
     });
 
-    // Assign agents round-robin to rooms, then to seats within that room
-    const seatCursors = new Map<number, number>();
-    agentEntries.forEach(([agentId, assignment], i) => {
-      // Find assigned room by desk prefix, or fall back to round-robin
-      const deskPrefix = assignment.desk.replace(/-desk-\d+$/, "");
-      let roomIdx = config.rooms.findIndex(
-        (r) => normalizeLabel(r.label) === deskPrefix,
-      );
-      if (roomIdx < 0) roomIdx = i % config.rooms.length;
+    const taken = new Set<string>(); // "roomIdx::furnitureIndex"
+    const standingCount = new Map<number, number>();
 
+    type Placement = { x: number; z: number; seatRotation: number | null };
+
+    const takeSeat = (roomIdx: number, furnitureIndex: number): Placement | null => {
+      const key = `${roomIdx}::${furnitureIndex}`;
+      if (taken.has(key)) return null;
+      const seat = seatPool.get(roomIdx)?.find((s) => s.furnitureIndex === furnitureIndex);
+      if (!seat) return null;
+      taken.add(key);
+      return { x: seat.pos[0], z: seat.pos[2], seatRotation: seat.rotation };
+    };
+
+    const takeNextFreeSeat = (roomIdx: number): Placement | null => {
+      for (const seat of seatPool.get(roomIdx) ?? []) {
+        const placed = takeSeat(roomIdx, seat.furnitureIndex);
+        if (placed) return placed;
+      }
+      return null;
+    };
+
+    const standInRoom = (roomIdx: number): Placement => {
       const room = config.rooms[roomIdx];
-      const roomCenter = getRoomWorldCenter(room);
-      const seats = seatPool.get(roomIdx) ?? [];
-      const cursor = seatCursors.get(roomIdx) ?? 0;
+      const center = getRoomWorldCenter(room);
+      const n = standingCount.get(roomIdx) ?? 0;
+      standingCount.set(roomIdx, n + 1);
+      // Golden-angle ring inside the room — no two agents share a spot.
+      const maxRadius = (Math.min(room.size[0], room.size[1]) * GRID_WORLD) / 2 - 0.9;
+      const radius = Math.min(0.9 + 0.35 * Math.floor(n / 6), Math.max(maxRadius, 0.6));
+      const angle = n * GOLDEN_ANGLE;
+      return {
+        x: center[0] + Math.cos(angle) * radius,
+        z: center[2] + Math.sin(angle) * radius,
+        seatRotation: null,
+      };
+    };
 
-      let x: number, z: number, seatRotation: number | null = null;
+    // Pass 1: agents with an explicit seat reference claim their chair.
+    const placements = new Map<string, Placement>();
+    for (const [agentId, assignment] of agentEntries) {
+      if (!assignment.seat) continue;
+      const resolved = resolveSeatRef(config.rooms, config.theme, assignment.seat);
+      if (!resolved) continue;
+      const placed = takeSeat(resolved.roomIndex, resolved.furnitureIndex);
+      if (placed) placements.set(agentId, placed);
+    }
 
-      if (cursor < seats.length) {
-        // Seat available — place agent at chair
-        const seat = seats[cursor];
-        x = seat.pos[0];
-        z = seat.pos[2];
-        seatRotation = seat.rotation;
-        seatCursors.set(roomIdx, cursor + 1);
-      } else {
-        // No more seats — stand near room center with offset
-        const overflow = cursor - seats.length;
-        x = roomCenter[0] + (overflow % 3) * 0.6 - 0.6;
-        z = roomCenter[2] + Math.floor(overflow / 3) * 0.6 - 0.3;
-        seatCursors.set(roomIdx, cursor + 1);
-      }
+    // Pass 2: everyone else — room from desk assignment (fuzzy), else
+    // round-robin across all rooms; free chair first, standing ring after.
+    let rr = 0;
+    for (const [agentId, assignment] of agentEntries) {
+      if (placements.has(agentId)) continue;
+      const deskPrefix = assignment.desk.replace(/-desk-\d+$/, "");
+      let roomIdx = matchRoomIndex(config.rooms, deskPrefix);
+      if (roomIdx < 0) roomIdx = rr++ % config.rooms.length;
 
-      const state = createAgentState({ x, z, seatRotation: seatRotation ?? 0 });
-      // If we have a seat, put them in seated mode
-      if (seatRotation !== null) {
+      const placed = takeNextFreeSeat(roomIdx) ?? standInRoom(roomIdx);
+      placements.set(agentId, placed);
+    }
+
+    const agents = agentEntries.map(([agentId, assignment], i) => {
+      const placed = placements.get(agentId)!;
+      const state = createAgentState({
+        x: placed.x,
+        z: placed.z,
+        seatRotation: placed.seatRotation ?? 0,
+      });
+      if (placed.seatRotation !== null) {
         state.mode = "seated" as const;
-        state.seatRotation = seatRotation;
+        state.seatRotation = placed.seatRotation;
       }
-
-      agents.push({
+      return {
         id: agentId,
         state,
         color: assignment.color ?? AGENT_COLORS[i % AGENT_COLORS.length],
         energy: assignment.energy ?? 0.5,
-      });
+      };
     });
 
     setAgentSnapshot(agents);
@@ -193,12 +229,9 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
 
   // Handle events — activity + glow only, no movement
   const handleEvent = useCallback((event: DioramaEvent) => {
-    // Glow any matching room (or random room in demo fallback)
+    // Glow the matching room; unknown rooms glow nothing (feed still records)
     if (event.room) {
-      let roomIdx = config.rooms.findIndex(
-        (r) => normalizeLabel(r.label) === normalizeLabel(event.room),
-      );
-      if (roomIdx < 0) roomIdx = Math.floor(Math.random() * config.rooms.length);
+      const roomIdx = matchRoomIndex(config.rooms, event.room);
       if (roomIdx >= 0) {
         setRoomGlows((prev) => ({ ...prev, [roomIdx]: 1 }));
         const existing = glowTimers.current.get(roomIdx);
@@ -214,14 +247,13 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
 
     // Find the agent
     const agentId = agentSnapshot.find(
-      (a) => normalizeLabel(a.id) === normalizeLabel(event.agent) || normalizeLabel(a.id).includes(normalizeLabel(event.agent)),
+      (a) => normalizeRoomName(a.id) === normalizeRoomName(event.agent) || normalizeRoomName(a.id).includes(normalizeRoomName(event.agent)),
     )?.id;
     if (!agentId) return;
 
     // Derive the target room's preset for activity mapping
-    const targetRoom =
-      config.rooms.find((r) => normalizeLabel(r.label) === normalizeLabel(event.room)) ??
-      config.rooms[0];
+    const matchedIdx = matchRoomIndex(config.rooms, event.room);
+    const targetRoom = matchedIdx >= 0 ? config.rooms[matchedIdx] : config.rooms[0];
     const preset = targetRoom?.preset ?? "workspace";
 
     // Set activity
@@ -311,7 +343,7 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
       {/* Activity feed */}
       <ActivityFeed entries={feedEntries} />
 
-      <DioramaScene theme={config.theme} center={roomsCenter}>
+      <DioramaScene theme={config.theme} center={roomsCenter} fitRadius={fitRadius}>
         {config.rooms.map((room, i) => (
           <Room3D
             key={`${room.preset}-${i}`}

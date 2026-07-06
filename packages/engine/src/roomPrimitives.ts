@@ -2,7 +2,7 @@ import { toWorld } from "./geometry";
 
 const DEFAULT_FLOOR_COLOR = "#1a1a2e";
 const WALL_HEIGHT = 2.5;
-const WALL_THICKNESS = 0.08;
+const _WALL_THICKNESS = 0.08;
 const DOOR_WIDTH = 1.2;
 const DOOR_HEIGHT = 2.2;
 const SCALE = 0.018;

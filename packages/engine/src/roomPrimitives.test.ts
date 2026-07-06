@@ -3,9 +3,6 @@ import {
   generateFloor,
   generateWalls,
   generateDoor,
-  type FloorGeometry,
-  type WallSegment,
-  type DoorGeometry,
 } from "./roomPrimitives";
 
 describe("generateFloor", () => {

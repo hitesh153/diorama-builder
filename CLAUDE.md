@@ -23,21 +23,15 @@ npm workspaces — 5 packages under `packages/`:
 
 ## Commands
 
-Node requirement: `/opt/homebrew/opt/node@22/bin/node` (system node may not work).
+Node ≥20 (see `engines` in package.json).
 
 ```bash
-# Run all tests (422+ across engine, plugins, ui, cli)
-/opt/homebrew/opt/node@22/bin/node node_modules/.bin/vitest run
-
-# Dev server (port 3456)
-PATH="/opt/homebrew/bin:$PATH" npx next dev -p 3456
-
-# Typecheck individual packages
-/opt/homebrew/opt/node@22/bin/node node_modules/.bin/tsc --project packages/engine/tsconfig.json --noEmit
-/opt/homebrew/opt/node@22/bin/node node_modules/.bin/tsc --project packages/app/tsconfig.json --noEmit
-
-# Build
-PATH="/opt/homebrew/bin:$PATH" npx next build
+npm test              # all tests (451+ across engine, plugins, ui, cli)
+                      # live-gateway tests are skipped unless DIORAMA_LIVE_TESTS=1
+npm run lint          # eslint (flat config at eslint.config.js)
+npm run typecheck     # tsc --build (libs) + app project check
+cd packages/app && npx next dev -p 3456   # dev server
+npx next build        # app build (from packages/app)
 ```
 
 ## Architecture
@@ -118,6 +112,18 @@ PATH="/opt/homebrew/bin:$PATH" npx next build
 - `packages/ui/src/builderStore.ts` — Reducer + undo/redo (12 action types)
 
 ## Changelog
+
+### 2026-07-06 — M0 Foundation (v3 world-builder plan)
+
+v3 plan lives at `docs/specs/diorama-v3-world-builder.md`. This milestone fixed every bug found by full browser simulation:
+
+- **Seat system root cause** — preset furniture (chairRing/deskRow) has no `label`, so all label-keyword seating checks failed silently: wizard step-3 dropdown was always empty AND LiveView's seat pool was empty (agents piled at room center). New engine module `seating.ts` (`resolveRoomFurniture`, `isSeatingItem` — now also matches glbPath filenames, `buildSeatOptions`, `resolveSeatRef`) is the single source of truth; used by AgentBehaviorStep (new `theme` prop) and LiveView.
+- **LiveView seating rewrite** — explicit `seat` refs from config honored first (they were saved but never read), then fuzzy desk-prefix room match, then free chairs, then golden-angle standing ring (no more stacking).
+- **Room matching** (`roomMatch.ts`) — `matchRoomIndex` fuzzy matcher (exact → containment). Random-room glow fallback removed: unmatched events don't glow.
+- **Demo events remap to real rooms** — `createMockEventStream(count, roomLabels?)` maps mock pipeline rooms onto the user's built rooms.
+- **Camera fit** — `fitCameraDistance(radius, fov)` in DioramaScene; both CameraSyncs (live + builder) frame the world by bounding-box radius instead of fixed (+20, +15).
+- **Hygiene** — eslint flat config (lint now passes; was broken), `engines: >=20` (Node-22 pin was folklore), favicon (`app/icon.svg`), LICENSE (MIT), GitHub Actions CI (lint/typecheck/test/build on Node 20+22), root tsconfig is now solution-style (`files: []`) with `@diorama/*` subpath mappings, package tsconfigs exclude tests from builds, vitest excludes `*.live.test.ts` unless `DIORAMA_LIVE_TESTS=1`, README truth pass.
+- Tests: 451 passing (27 seating/roomMatch + 5 mock-remap added).
 
 ### 2026-04-08 — Floor Style Fix (4 bugs)
 

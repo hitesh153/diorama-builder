@@ -17,7 +17,7 @@ describe("default coordinate system (1800x1000, scale 0.018)", () => {
   });
 
   it("converts canvas bottom-right to positive world coords", () => {
-    const [x, y, z] = toWorld(1800, 1000);
+    const [x, _y, z] = toWorld(1800, 1000);
     expect(x).toBeCloseTo(900 * 0.018, 5);
     expect(z).toBeCloseTo(500 * 0.018, 5);
   });

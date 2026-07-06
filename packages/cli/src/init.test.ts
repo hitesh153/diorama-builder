@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { scaffoldProject, type ScaffoldOptions } from "./init";
+import { scaffoldProject } from "./init";
 
 describe("scaffoldProject", () => {
   let tmpDir: string;

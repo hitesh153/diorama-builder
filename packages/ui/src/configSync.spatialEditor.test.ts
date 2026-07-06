@@ -6,7 +6,7 @@ import {
   loadBuilderStateFromConfig,
   saveBuilderStateToConfig,
 } from "./configSync";
-import { createBuilderState, builderReducer } from "./builderStore";
+import { builderReducer } from "./builderStore";
 
 /**
  * Tests for config round-trip of spatial editor fields:

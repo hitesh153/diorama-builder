@@ -6,6 +6,11 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["packages/*/src/**/*.test.ts"],
+    // Live-gateway tests need a running OpenClaw gateway; opt in with
+    // DIORAMA_LIVE_TESTS=1.
+    exclude: process.env.DIORAMA_LIVE_TESTS
+      ? ["**/node_modules/**"]
+      : ["**/node_modules/**", "**/*.live.test.ts"],
   },
   resolve: {
     alias: {

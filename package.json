@@ -2,21 +2,27 @@
   "name": "diorama",
   "version": "0.1.0",
   "private": true,
-  "description": "Configurable 3D workspace visualizer for OpenClaw",
+  "type": "module",
+  "description": "Build 3D worlds for your AI agents — design offices, connect agent runtimes, watch them work live",
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --build",
+    "typecheck": "tsc --build && tsc --project packages/app/tsconfig.json --noEmit",
     "lint": "eslint packages/",
     "build": "npm run build --workspaces"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/ws": "^8.18.1",
     "eslint": "^9.0.0",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^3.1.0"
   }
 }

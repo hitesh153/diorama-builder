@@ -6,7 +6,6 @@ import {
   serializeFrame,
   isEventFrame,
   isResponseFrame,
-  type GatewayFrame,
   type EventFrame,
   type ResponseFrame,
   type RequestFrame,

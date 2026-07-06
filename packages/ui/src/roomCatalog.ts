@@ -1,4 +1,4 @@
-import { ROOM_PRESETS, type RoomPreset } from "@diorama/engine";
+import { ROOM_PRESETS } from "@diorama/engine";
 
 export interface RoomCatalogEntry {
   preset: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { RoomConfig } from "@diorama/engine";
+import { buildSeatOptions, type RoomConfig } from "@diorama/engine";
 
 export interface AgentBehavior {
   seat: string;
@@ -12,35 +12,10 @@ export interface AgentBehavior {
 interface AgentBehaviorStepProps {
   agents: string[];
   rooms: RoomConfig[];
+  theme: string;
   initialBehaviors: Record<string, AgentBehavior>;
   onComplete: (behaviors: Record<string, AgentBehavior>) => void;
   onBack: () => void;
-}
-
-/** Build seat options grouped by room. Each option is "room-label::index". */
-function buildSeatOptions(rooms: RoomConfig[]): Array<{ room: string; label: string; value: string }> {
-  const options: Array<{ room: string; label: string; value: string }> = [];
-  for (const room of rooms) {
-    const furniture = room.furniture ?? [];
-    furniture.forEach((f, i) => {
-      const fLabel = f.label ?? `Item ${i + 1}`;
-      // Only offer seating-like furniture
-      const isSeating =
-        fLabel.toLowerCase().includes("chair") ||
-        fLabel.toLowerCase().includes("couch") ||
-        fLabel.toLowerCase().includes("sofa") ||
-        fLabel.toLowerCase().includes("stool") ||
-        fLabel.toLowerCase().includes("lounge");
-      if (isSeating) {
-        options.push({
-          room: room.label,
-          label: `${room.label} > ${fLabel}`,
-          value: `${room.label}::${i}`,
-        });
-      }
-    });
-  }
-  return options;
 }
 
 function defaultBehavior(): AgentBehavior {
@@ -50,6 +25,7 @@ function defaultBehavior(): AgentBehavior {
 export function AgentBehaviorStep({
   agents,
   rooms,
+  theme,
   initialBehaviors,
   onComplete,
   onBack,
@@ -62,7 +38,7 @@ export function AgentBehaviorStep({
     return init;
   });
 
-  const seatOptions = useMemo(() => buildSeatOptions(rooms), [rooms]);
+  const seatOptions = useMemo(() => buildSeatOptions(rooms, theme), [rooms, theme]);
   const roomLabels = useMemo(() => rooms.map((r) => r.label), [rooms]);
 
   const updateBehavior = (agent: string, patch: Partial<AgentBehavior>) => {

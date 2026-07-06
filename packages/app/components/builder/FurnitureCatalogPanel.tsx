@@ -10,7 +10,7 @@ const CATEGORY_LABELS: Record<FurnitureCategory, string> = {
   decor: "Decor",
 };
 
-const CATEGORY_ICONS: Record<FurnitureCategory, string> = {
+const _CATEGORY_ICONS: Record<FurnitureCategory, string> = {
   seating: "S",
   surfaces: "T",
   tech: "M",

@@ -6,6 +6,7 @@ import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
 import { toWorld } from "@diorama/engine";
 import * as THREE from "three";
 import { Room3D } from "../scene/Room3D";
+import { fitCameraDistance } from "../scene/DioramaScene";
 import { DragGroundPlane } from "../scene/DragGroundPlane";
 import { GhostRoom } from "../scene/GhostRoom";
 import { ResizeHandles } from "../scene/ResizeHandles";
@@ -58,16 +59,18 @@ interface BuildStep3DProps {
 }
 
 /** Syncs camera + OrbitControls target to the rooms centroid on every frame */
-function CameraSync({ center }: { center: [number, number, number] }) {
+function CameraSync({ center, fitRadius }: { center: [number, number, number]; fitRadius: number }) {
   const { camera, controls } = useThree();
   const prevCenter = useRef<string>("");
 
   useEffect(() => {
-    const key = `${center[0].toFixed(2)},${center[2].toFixed(2)}`;
+    const key = `${center[0].toFixed(2)},${center[2].toFixed(2)},${fitRadius.toFixed(2)}`;
     if (key === prevCenter.current) return;
     prevCenter.current = key;
 
-    camera.position.set(center[0], 20, center[2] + 15);
+    const fov = "fov" in camera ? (camera as unknown as THREE.PerspectiveCamera).fov : 50;
+    const d = fitCameraDistance(fitRadius, fov);
+    camera.position.set(center[0], d * 0.8, center[2] + d * 0.6);
     camera.lookAt(center[0], 0, center[2]);
     camera.updateProjectionMatrix();
 
@@ -77,7 +80,7 @@ function CameraSync({ center }: { center: [number, number, number] }) {
       c.target.set(center[0], 0, center[2]);
       c.update();
     }
-  }, [center, camera, controls]);
+  }, [center, fitRadius, camera, controls]);
 
   return null;
 }
@@ -108,10 +111,13 @@ export function BuildStep3D({ rooms, theme, selectedRoomId, dispatch, isPlacingF
   const selectedRoom = selectedRoomId ? rooms.find((r) => r.id === selectedRoomId) : null;
   const isInteracting = isDragging || isResizing;
 
-  // Compute centroid of all rooms in world coordinates for camera targeting
+  // Compute centroid + bounding radius of all rooms for camera targeting
   const GRID_UNIT = 200;
-  const roomsCenter = useMemo(() => {
-    if (rooms.length === 0) return [0, 0, 0] as [number, number, number];
+  const GRID_WORLD = 3.6;
+  const { roomsCenter, fitRadius } = useMemo(() => {
+    if (rooms.length === 0) {
+      return { roomsCenter: [0, 0, 0] as [number, number, number], fitRadius: 12 };
+    }
     let minGx = Infinity, minGy = Infinity, maxGx = -Infinity, maxGy = -Infinity;
     for (const r of rooms) {
       minGx = Math.min(minGx, r.position[0]);
@@ -122,7 +128,12 @@ export function BuildStep3D({ rooms, theme, selectedRoomId, dispatch, isPlacingF
     const cx = ((minGx + maxGx) / 2) * GRID_UNIT;
     const cy = ((minGy + maxGy) / 2) * GRID_UNIT;
     const [wx, , wz] = toWorld(cx, cy);
-    return [wx, 0, wz] as [number, number, number];
+    const halfW = ((maxGx - minGx) / 2) * GRID_WORLD;
+    const halfH = ((maxGy - minGy) / 2) * GRID_WORLD;
+    return {
+      roomsCenter: [wx, 0, wz] as [number, number, number],
+      fitRadius: Math.max(Math.hypot(halfW, halfH), 6),
+    };
   }, [rooms]);
 
   // Merge pointer-move / pointer-up so both drag and resize get events
@@ -145,7 +156,7 @@ export function BuildStep3D({ rooms, theme, selectedRoomId, dispatch, isPlacingF
       >
         {/* Camera */}
         <PerspectiveCamera makeDefault position={[roomsCenter[0], 20, roomsCenter[2] + 15]} fov={50} />
-        <CameraSync center={roomsCenter} />
+        <CameraSync center={roomsCenter} fitRadius={fitRadius} />
 
         {/* Lighting */}
         <ambientLight intensity={0.4} color={colors.accent} />

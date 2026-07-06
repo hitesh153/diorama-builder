@@ -14,17 +14,31 @@ const THEMES: Record<string, typeof neonDarkTheme> = {
   "minimal": minimalTheme,
 };
 
-/** Syncs camera + OrbitControls to center on rooms */
-function CameraSync({ center }: { center: [number, number, number] }) {
+/**
+ * Distance the camera needs to frame a world of the given bounding radius.
+ * Derived from the vertical FOV with a margin; clamped to OrbitControls'
+ * min/max distance range.
+ */
+export function fitCameraDistance(radius: number, fovDegrees: number): number {
+  const fov = (fovDegrees * Math.PI) / 180;
+  const distance = (radius * 1.25) / Math.tan(fov / 2);
+  return Math.min(Math.max(distance, 8), 55);
+}
+
+/** Syncs camera + OrbitControls to center on rooms and fit their extent */
+function CameraSync({ center, fitRadius }: { center: [number, number, number]; fitRadius?: number }) {
   const { camera, controls } = useThree();
   const prevCenter = useRef<string>("");
 
   useEffect(() => {
-    const key = `${center[0].toFixed(2)},${center[2].toFixed(2)}`;
+    const key = `${center[0].toFixed(2)},${center[2].toFixed(2)},${(fitRadius ?? 0).toFixed(2)}`;
     if (key === prevCenter.current) return;
     prevCenter.current = key;
 
-    camera.position.set(center[0], 20, center[2] + 15);
+    const fov = "fov" in camera ? (camera as unknown as THREE.PerspectiveCamera).fov : 50;
+    const d = fitCameraDistance(fitRadius ?? 12, fov);
+    // Keep the classic 4:3 down-angle: height 0.8·d, pull-back 0.6·d.
+    camera.position.set(center[0], d * 0.8, center[2] + d * 0.6);
     camera.lookAt(center[0], 0, center[2]);
     camera.updateProjectionMatrix();
 
@@ -33,7 +47,7 @@ function CameraSync({ center }: { center: [number, number, number] }) {
       c.target.set(center[0], 0, center[2]);
       c.update();
     }
-  }, [center, camera, controls]);
+  }, [center, fitRadius, camera, controls]);
 
   return null;
 }
@@ -41,10 +55,12 @@ function CameraSync({ center }: { center: [number, number, number] }) {
 interface DioramaSceneProps {
   theme: string;
   center?: [number, number, number];
+  /** World-space bounding radius of the content — used to frame the camera. */
+  fitRadius?: number;
   children: React.ReactNode;
 }
 
-export function DioramaScene({ theme, center, children }: DioramaSceneProps) {
+export function DioramaScene({ theme, center, fitRadius, children }: DioramaSceneProps) {
   const sceneConfig = useMemo(() => {
     const base = createSceneConfig();
     const themePlugin = THEMES[theme] ?? neonDarkTheme;
@@ -65,7 +81,7 @@ export function DioramaScene({ theme, center, children }: DioramaSceneProps) {
       }}
       style={{ width: "100%", height: "100%" }}
     >
-      {center && <CameraSync center={center} />}
+      {center && <CameraSync center={center} fitRadius={fitRadius} />}
       <color attach="background" args={[sceneConfig.background]} />
       <fog attach="fog" args={[sceneConfig.fog.color, sceneConfig.fog.near, sceneConfig.fog.far]} />
       <ambientLight color={sceneConfig.ambientLight.color} intensity={sceneConfig.ambientLight.intensity} />

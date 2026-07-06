@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { toWorld } from "@diorama/engine";
 import type { ThreeEvent } from "@react-three/fiber";
 

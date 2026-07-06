@@ -5,6 +5,18 @@
     "rootDir": "src",
     "composite": true
   },
-  "include": ["src"],
-  "references": [{ "path": "../engine" }, { "path": "../plugins" }]
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../engine"
+    },
+    {
+      "path": "../plugins"
+    }
+  ],
+  "exclude": [
+    "src/**/*.test.ts"
+  ]
 }

@@ -17,17 +17,22 @@
     "baseUrl": ".",
     "paths": {
       "@diorama/engine": ["packages/engine/src"],
+      "@diorama/engine/*": ["packages/engine/src/*"],
       "@diorama/plugins": ["packages/plugins/src"],
+      "@diorama/plugins/*": ["packages/plugins/src/*"],
       "@diorama/cli": ["packages/cli/src"],
+      "@diorama/cli/*": ["packages/cli/src/*"],
       "@diorama/ui": ["packages/ui/src"],
-      "@diorama/app": ["packages/app"]
+      "@diorama/ui/*": ["packages/ui/src/*"],
+      "@diorama/app": ["packages/app"],
+      "@diorama/app/*": ["packages/app/*"]
     }
   },
+  "files": [],
   "references": [
     { "path": "packages/engine" },
     { "path": "packages/plugins" },
     { "path": "packages/cli" },
-    { "path": "packages/ui" },
-    { "path": "packages/app" }
+    { "path": "packages/ui" }
   ]
 }
