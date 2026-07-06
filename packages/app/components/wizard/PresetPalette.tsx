@@ -14,10 +14,12 @@ const PRESET_ICONS: Record<string, string> = {
 
 interface PresetPaletteProps {
   onAdd: (presetId: string) => void;
+  /** Double-click: place immediately at the next free position (bypasses placement mode) */
+  onAddImmediate?: (presetId: string) => void;
   onAddCustom?: (name: string, width: number, height: number) => void;
 }
 
-export function PresetPalette({ onAdd, onAddCustom }: PresetPaletteProps) {
+export function PresetPalette({ onAdd, onAddImmediate, onAddCustom }: PresetPaletteProps) {
   const [showCustomForm, setShowCustomForm] = useState(false);
 
   return (
@@ -28,6 +30,7 @@ export function PresetPalette({ onAdd, onAddCustom }: PresetPaletteProps) {
           <button
             key={preset.id}
             onClick={() => onAdd(preset.id)}
+            onDoubleClick={() => onAddImmediate?.(preset.id)}
             style={{
               display: "flex",
               alignItems: "center",

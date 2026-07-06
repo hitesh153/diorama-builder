@@ -16,13 +16,21 @@ interface Room3DProps {
   floorColor: string;
   themeId: string;
   selected?: boolean;
+  /** In the multi-selection set but not the primary selection — dimmer highlight */
+  multiSelected?: boolean;
   glowIntensity?: number;
+  /** Index of the selected furniture item in this room (custom furniture only) */
+  selectedFurnitureIndex?: number | null;
+  /** Live drag preview for one furniture item (room-center-relative position) */
+  furniturePreview?: { index: number; position: [number, number, number] } | null;
+  /** When set, furniture items are clickable/draggable */
+  onFurniturePointerDown?: (index: number, e: ThreeEvent<PointerEvent>) => void;
   onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
   onPointerUp?: () => void;
   onPointerMove?: (e: ThreeEvent<PointerEvent>) => void;
 }
 
-export function Room3D({ room, accentColor, floorColor, themeId, selected, glowIntensity = 0, onPointerDown, onPointerUp, onPointerMove }: Room3DProps) {
+export function Room3D({ room, accentColor, floorColor, themeId, selected, multiSelected, glowIntensity = 0, selectedFurnitureIndex = null, furniturePreview = null, onFurniturePointerDown, onPointerDown, onPointerUp, onPointerMove }: Room3DProps) {
   // Resolve preset floor+wall defaults; null for unknown presets (e.g. "custom") — downstream uses have fallbacks
   const presetFloorWall = useMemo(
     () => getFloorWall(room.preset, themeId),
@@ -129,6 +137,20 @@ export function Room3D({ room, accentColor, floorColor, themeId, selected, glowI
         </mesh>
       )}
 
+      {/* Multi-selection highlight — dimmer variant of the selection visual */}
+      {!selected && multiSelected && (
+        <mesh position={[floor.position[0], 0.06, floor.position[2]]}>
+          <boxGeometry args={[floor.width + 0.02, 0.01, floor.depth + 0.02]} />
+          <meshStandardMaterial
+            color={effectiveAccent}
+            emissive={effectiveAccent}
+            emissiveIntensity={0.25}
+            transparent
+            opacity={0.55}
+          />
+        </mesh>
+      )}
+
       {/* Activity glow */}
       {glowIntensity > 0 && (
         <mesh position={[floor.position[0], 0.08, floor.position[2]]}>
@@ -229,7 +251,14 @@ export function Room3D({ room, accentColor, floorColor, themeId, selected, glowI
       })()}
 
       {/* Furniture */}
-      <RoomFurniture3D items={furniture} roomCenter={roomCenter} />
+      <RoomFurniture3D
+        items={furniture}
+        roomCenter={roomCenter}
+        selectedIndex={selectedFurnitureIndex}
+        accentColor={effectiveAccent}
+        previewOverride={furniturePreview}
+        onItemPointerDown={onFurniturePointerDown}
+      />
     </group>
   );
 }

@@ -5,6 +5,9 @@ interface ProToolbarProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  viewMode: "2d" | "3d";
+  onViewModeChange: (mode: "2d" | "3d") => void;
+  onFit: () => void;
 }
 
 const TOOL_BTN: React.CSSProperties = {
@@ -57,11 +60,31 @@ const ICON_BTN_DISABLED: React.CSSProperties = {
   cursor: "default",
 };
 
+const SEG_BTN: React.CSSProperties = {
+  padding: "4px 12px",
+  background: "transparent",
+  border: "none",
+  fontSize: 11,
+  fontWeight: 600,
+  cursor: "pointer",
+  color: "#8090a0",
+  fontFamily: "'SF Mono', 'Fira Code', monospace",
+};
+
+const SEG_BTN_ACTIVE: React.CSSProperties = {
+  ...SEG_BTN,
+  background: "#1a2840",
+  color: "#e0e8ff",
+};
+
 export function ProToolbar({
   canUndo,
   canRedo,
   onUndo,
   onRedo,
+  viewMode,
+  onViewModeChange,
+  onFit,
 }: ProToolbarProps) {
   return (
     <div style={{
@@ -79,6 +102,37 @@ export function ProToolbar({
       <div style={TOOL_BTN_ACTIVE}>
         <span>▸</span> Select
       </div>
+
+      <div style={DIVIDER} />
+
+      {/* 2D | 3D segmented view toggle */}
+      <div style={{
+        display: "flex",
+        border: "1px solid #1e2d42",
+        borderRadius: 6,
+        overflow: "hidden",
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={() => onViewModeChange("2d")}
+          title="Top-down 2D view (2)"
+          style={viewMode === "2d" ? SEG_BTN_ACTIVE : SEG_BTN}
+        >
+          2D
+        </button>
+        <button
+          onClick={() => onViewModeChange("3d")}
+          title="Perspective 3D view (3)"
+          style={viewMode === "3d" ? SEG_BTN_ACTIVE : SEG_BTN}
+        >
+          3D
+        </button>
+      </div>
+
+      {/* Zoom to fit */}
+      <button onClick={onFit} title="Zoom to fit (F)" style={TOOL_BTN}>
+        ⤢ Fit
+      </button>
 
       <div style={DIVIDER} />
 
@@ -105,7 +159,7 @@ export function ProToolbar({
 
       {/* Keyboard shortcut hint */}
       <div style={{ fontSize: 10, color: "#2a3545", fontFamily: "'SF Mono', 'Fira Code', monospace" }}>
-        D · delete &nbsp; Esc · cancel
+        V select · 2/3 view · F fit · ⌘D duplicate · D delete · Esc cancel
       </div>
     </div>
   );

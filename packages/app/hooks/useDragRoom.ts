@@ -18,6 +18,8 @@ interface DragInfo {
   startGridY: number;
   roomSize: [number, number];
   hasMoved: boolean;
+  /** Shift held at pointer-down → click toggles multi-select */
+  shiftKey: boolean;
 }
 
 export interface GhostData {
@@ -87,6 +89,7 @@ export function useDragRoom(
         startGridY: room.position[1],
         roomSize: [...room.size],
         hasMoved: false,
+        shiftKey: e.shiftKey ?? e.nativeEvent?.shiftKey ?? false,
       };
     },
     [],
@@ -146,8 +149,12 @@ export function useDragRoom(
       }
       // invalid drop → room stays at original position (no dispatch)
     } else if (!info.hasMoved) {
-      // No movement → treat as click → select the room
-      dispatchRef.current({ type: "SELECT_ROOM", roomId: info.roomId });
+      // No movement → treat as click → select (shift-click toggles multi-select)
+      if (info.shiftKey) {
+        dispatchRef.current({ type: "TOGGLE_SELECT_ROOM", roomId: info.roomId });
+      } else {
+        dispatchRef.current({ type: "SELECT_ROOM", roomId: info.roomId });
+      }
     }
 
     // Clean up

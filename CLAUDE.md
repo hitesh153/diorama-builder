@@ -113,6 +113,21 @@ npx next build        # app build (from packages/app)
 
 ## Changelog
 
+### 2026-07-06 — M1 CAD Editor
+
+Builder is now CAD-grade. All browser-verified end-to-end.
+
+- **2D ⇄ 3D view toggle** (toolbar + keys 2/3) — 2D is a top-down floor-plan view using the SAME perspective camera positioned overhead with rotation-locked OrbitControls. (First attempt used drei `<OrthographicCamera makeDefault>` + imperative zoom — the makeDefault swap races the camera-setup effect (effect runs against the old camera) and rendering broke; same-camera-different-framing is the robust pattern.)
+- **Zoom-to-fit** (F / ⤢ Fit) via a `fitSignal` counter; camera no longer auto-jumps on room edits (CameraSync refits only on fitSignal/mount, reading center/radius through a ref).
+- **Inspector panel** (`builder/InspectorPanel.tsx`) — label, numeric X/Y/W/H (grid units), cells/m² line; furniture inspector (X/Z, ↻ 90°, delete). Inputs are draft-buffered `CommitField`s: commit on blur/Enter, Escape reverts — per-keystroke commits moved rooms through transient values ("6"→"62") and spammed undo.
+- **Keyboard map**: arrows nudge selection ±1 (Shift ±5), ⌘D duplicate, R rotates selected furniture, D/Del deletes furniture-first-then-room, Esc cancels placement/deselects, 2/3/F views. Fixed the pre-existing stale-closure bug (deps `[]` reading live state) with a keyState ref.
+- **Multi-select**: shift-click toggles (`TOGGLE_SELECT_ROOM`), group arrow-nudge moves rigidly (`NUDGE_ROOMS` rejects only non-group collisions), dimmer highlight on secondary selections.
+- **Room placement mode**: palette click arms a ghost-follows-pointer mode (red tint on overlap), click places, Esc cancels, double-click = old instant auto-place.
+- **Furniture editing**: click-select + drag (custom-furniture rooms only — preset furniture isn't in the store), `useFurnitureDrag` hook, ring highlight.
+- **Store** (`@diorama/ui`): `selectedRoomIds`, `selectedFurniture`, actions TOGGLE_SELECT_ROOM / SELECT_ROOMS / NUDGE_ROOMS / DUPLICATE_ROOM / UPDATE_FURNITURE / SELECT_FURNITURE. 20 new tests.
+- Dev-only `window.__dioramaBuilder` state probe in BuildStep for automated browser verification.
+- Tests: 471 passing.
+
 ### 2026-07-06 — M0 Foundation (v3 world-builder plan)
 
 v3 plan lives at `docs/specs/diorama-v3-world-builder.md`. This milestone fixed every bug found by full browser simulation:
