@@ -57,7 +57,9 @@ export type BuilderAction =
   | { type: "UPDATE_FURNITURE"; roomId: string; furnitureIndex: number; updates: Partial<NonNullable<RoomPlacement["furniture"]>[0]> }
   | { type: "SELECT_FURNITURE"; ref: FurnitureRef | null }
   | { type: "UNDO" }
-  | { type: "REDO" };
+  | { type: "REDO" }
+  /** Apply several actions as ONE undo step (used by the AI copilot). */
+  | { type: "BATCH"; actions: BuilderAction[] };
 
 export function createBuilderState(initialRooms: RoomPlacement[] = []): BuilderState {
   return {
@@ -359,6 +361,22 @@ export function builderReducer(state: BuilderState, action: BuilderAction): Buil
         ),
         selectedFurniture,
       };
+    }
+
+    case "BATCH": {
+      if (action.actions.length === 0) return state;
+      // Apply sub-actions with history suppressed, then record ONE entry.
+      let inner: BuilderState = { ...state, history: { past: [], future: [] } };
+      for (const sub of action.actions) {
+        if (sub.type === "UNDO" || sub.type === "REDO" || sub.type === "BATCH") continue;
+        inner = builderReducer(inner, sub);
+      }
+      if (inner.rooms === state.rooms) {
+        // Nothing structural changed — keep original history untouched
+        return { ...inner, history: state.history };
+      }
+      const withHistory = pushHistory(state);
+      return { ...inner, history: withHistory.history };
     }
 
     default:

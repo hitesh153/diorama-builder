@@ -12,6 +12,7 @@ import { RoomColorPicker } from "../builder/RoomColorPicker";
 import { FloorStylePicker } from "../builder/FloorStylePicker";
 import { FurnitureCatalogPanel } from "../builder/FurnitureCatalogPanel";
 import { InspectorPanel } from "../builder/InspectorPanel";
+import { CopilotPanel } from "../builder/CopilotPanel";
 import { useFurniturePlacement } from "../../hooks/useFurniturePlacement";
 import {
   neonDarkTheme,
@@ -43,7 +44,7 @@ interface BuildStepProps {
 export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: BuildStepProps) {
   const [state, dispatch] = useReducer(builderReducer, createBuilderState());
   const [agentAssignments, setAgentAssignments] = useState<Record<string, string>>({});
-  const [sidebarTab, setSidebarTab] = useState<"rooms" | "agents" | "theme" | "furniture">("rooms");
+  const [sidebarTab, setSidebarTab] = useState<"rooms" | "agents" | "theme" | "furniture" | "assistant">("rooms");
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [fitSignal, setFitSignal] = useState(0);
   // Room placement mode: a palette click arms this; a viewport click places
@@ -343,7 +344,7 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
       }}>
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "1px solid #1a2535" }}>
-          {(["rooms", "agents", "theme", "furniture"] as const).map((tab) => (
+          {(["rooms", "agents", "theme", "furniture", "assistant"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setSidebarTab(tab)}
@@ -359,13 +360,13 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
                 textTransform: "capitalize",
               }}
             >
-              {tab}
+              {tab === "assistant" ? "✦ AI" : tab}
             </button>
           ))}
         </div>
 
         {/* Inspector — top of the sidebar whenever a room is selected (any tab) */}
-        {(selectedRoom || state.selectedRoomIds.length > 0 || state.selectedFurniture) && (
+        {sidebarTab !== "assistant" && (selectedRoom || state.selectedRoomIds.length > 0 || state.selectedFurniture) && (
           <InspectorPanel
             rooms={rooms}
             selectedRoomId={selectedRoomId}
@@ -375,8 +376,27 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
           />
         )}
 
-        {/* Tab content */}
-        <div style={{ flex: 1, overflow: "auto", overscrollBehavior: "contain", padding: 16 }}>
+        {/* Tab content — assistant manages its own scroll/padding */}
+        <div
+          style={
+            sidebarTab === "assistant"
+              ? { flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }
+              : { flex: 1, overflow: "auto", overscrollBehavior: "contain", padding: 16 }
+          }
+        >
+          {sidebarTab === "assistant" && (
+            <CopilotPanel
+              state={state}
+              dispatch={dispatch}
+              theme={theme}
+              agents={agents}
+              onThemeChange={onThemeChange}
+              onAssignAgent={(agent, roomLabel) => {
+                setAgentAssignments((prev) => ({ ...prev, [agent]: roomLabel }));
+              }}
+              makeId={genRoomId}
+            />
+          )}
           {sidebarTab === "rooms" && (
             <div>
               <PresetPalette onAdd={startPlacingRoom} onAddImmediate={addRoom} onAddCustom={addCustomRoom} />

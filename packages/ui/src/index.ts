@@ -1,6 +1,21 @@
 // Builder store
 export { createBuilderState, builderReducer } from "./builderStore";
-export type { BuilderState, RoomPlacement, BuilderAction } from "./builderStore";
+export type { BuilderState, RoomPlacement, BuilderAction, FurnitureRef } from "./builderStore";
+
+// Copilot tool surface
+export {
+  COPILOT_TOOLS,
+  applyToolCall,
+  roomProgramForTeam,
+  describeWorld,
+} from "./copilotTools";
+export type {
+  CopilotToolDef,
+  CopilotToolCall,
+  CopilotEffect,
+  ApplyResult,
+  LayoutRoomSpec,
+} from "./copilotTools";
 
 // Config sync
 export { loadBuilderStateFromConfig, saveBuilderStateToConfig } from "./configSync";

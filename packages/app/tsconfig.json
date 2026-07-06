@@ -33,6 +33,15 @@
       ],
       "@/*": [
         "./*"
+      ],
+      "@diorama/engine/*": [
+        "../engine/src/*"
+      ],
+      "@diorama/plugins/*": [
+        "../plugins/src/*"
+      ],
+      "@diorama/ui/*": [
+        "../ui/src/*"
       ]
     },
     "allowJs": true,

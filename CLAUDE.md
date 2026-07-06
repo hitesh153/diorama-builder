@@ -113,6 +113,19 @@ npx next build        # app build (from packages/app)
 
 ## Changelog
 
+### 2026-07-06 — M2 Copilot Chat
+
+AI copilot that builds the world through the reducer — bring-your-own-LLM. Verified end-to-end in the browser against a mock OpenAI-compatible server (canned tool calls).
+
+- **Tool surface** (`packages/ui/src/copilotTools.ts`) — COPILOT_TOOLS (11 tools: add/remove/move/resize/rename room, colors, floor style, furniture, set_theme, assign_agent, generate_layout) + pure `applyToolCall(state, call, makeId) → {actions, effects, summary, error}`. Room names resolve via `matchRoomIndex` (fuzzy). `generate_layout` maps roles→presets with capacity splitting (engineer→workspace cap 3, qa/research→lab cap 4, manager→private cap 1, comms→social) + meeting (≥3 people) + lounge (≥5). `describeWorld` feeds the system prompt.
+- **BATCH reducer action** — applies N actions as ONE undo step (sub-UNDO/REDO/BATCH ignored; no-op batches leave history untouched). Every AI edit is a single undo.
+- **Provider adapters** (`packages/plugins/src/copilot/providers.ts`) — anthropic (Messages API + tool_use blocks), openai-compatible (chat/completions + tool_calls; covers OpenAI/OpenRouter/Groq/vLLM), ollama (local, key-less), codex-auth (ChatGPT-subscription token). Dependency-free fetch. Malformed tool-call JSON args tolerated (empty input).
+- **Credentials** (`copilot/credentials.ts`) — ~/.diorama/credentials.json chmod 0600, server-side only; `DIORAMA_HOME` env override for tests; codex-auth re-reads ~/.codex/auth.json `tokens.access_token` per call (CLI refreshes it out-of-band); `credentialsStatus()` is the browser-safe shape (never includes the key).
+- **API routes** — `/api/copilot/config` (GET status / POST save-with-key-merge / DELETE), `/api/copilot/chat` (loads creds → provider.chat with COPILOT_TOOLS; 400 not_configured, 502 with provider message), `/api/copilot/test` (minimal ping call).
+- **CopilotPanel** (`builder/CopilotPanel.tsx`) — 5th sidebar tab "✦ AI". Client-side agentic loop (max 5 rounds): chat → applyToolCall per call against a *working state* (later calls see earlier results) → one BATCH dispatch → effects (theme/assignment) → toolResults back to the model → repeat until no tool calls. Green ✓ / red ✗ chips per tool call, per-turn Undo link, quick-prompt chips, settings card (provider/key/model/baseUrl + Save & test) shown when unconfigured or via ⚙.
+- **Client/server import boundary**: browser code imports only `@diorama/plugins/copilot/providers` (types/labels) and `@diorama/ui/src/copilotTools`; `credentials.ts` (fs) is API-route-only. App tsconfig gained `@diorama/*/*` subpath mappings.
+- Tests: 503 passing (17 copilotTools + 9 providers + 6 credentials added).
+
 ### 2026-07-06 — M1 CAD Editor
 
 Builder is now CAD-grade. All browser-verified end-to-end.
