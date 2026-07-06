@@ -1,6 +1,6 @@
 # Diorama v3 — Generic Agent-World Builder
 
-**Status:** Proposed · 2026-07-06
+**Status:** Implemented (M0–M5) · 2026-07-06 — see CLAUDE.md changelog for per-milestone details. First npm publish pending (release workflow ready, needs NPM_TOKEN + version tag).
 **Supersedes scope of:** `diorama-mvp-v2.md` (extends, does not replace)
 
 ## Vision

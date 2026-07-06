@@ -1,144 +1,124 @@
 # Diorama
 
-Build 3D worlds for your AI agents. Design an office with a spatial editor — rooms, furniture, themes — connect your agent runtime, and watch your agents work in a live 3D scene.
+**Build 3D worlds for your AI agents.** Design an office in a CAD-style
+editor (or ask the AI copilot to design it for you), connect the agent
+runtimes you already use, and watch your agents live — walking between
+rooms, showing what they're working on.
 
-Works with [OpenClaw](https://github.com/openclaw) gateways today; a generic event protocol and more connectors (Codex sessions, Claude Code) are on the roadmap (see `docs/specs/diorama-v3-world-builder.md`).
+Works today with **Codex CLI**, **Claude Code**, **OpenClaw gateways**, and
+**anything that can send an HTTP request**.
 
-## Quick Start (from source)
+## Quick start (from source)
 
-> Not yet published to npm — run from a checkout for now.
+> Not yet on npm — run from a checkout. Requires Node ≥ 20.
 
 ```bash
 git clone https://github.com/hitesh153/diorama-builder && cd diorama-builder
 npm install
-npx next dev -p 3456 --dir packages/app   # or: cd packages/app && npx next dev -p 3456
+cd packages/app && npx next dev -p 3456
 ```
 
-Open http://localhost:3456 — with no config present you'll land in the wizard. Once published, this becomes `npx diorama init my-office && npx diorama dev`.
+Open http://localhost:3456 — with no config you land in the wizard:
 
-## How It Works
+1. **Connect** — Diorama scans your machine for agent runtimes (Codex
+   sessions, Claude Code projects) and offers one-click connections, an
+   OpenClaw gateway form, an HTTP push option, or demo data.
+2. **Build Your Office** — CAD-style editor: 2D/3D views, click-to-place
+   rooms with ghost preview, drag / 8-handle resize / multi-select /
+   keyboard nudge, numeric inspector, furniture catalog, floor styles,
+   themes, full undo/redo — plus the **✦ AI copilot** tab
+   ([docs](docs/copilot.md)).
+3. **Configure Agents** — seat assignment, room access, energy per agent.
+4. **Launch** — config saved to `~/.diorama/config.json`; the live world
+   starts.
 
-Diorama uses a preset-based room system with theme-dependent furniture. No hardcoded room types — you build your office from 5 generic room presets, and the furniture morphs based on your chosen theme.
+## Connect anything
 
-### Room Presets
+```bash
+curl -X POST http://localhost:3456/api/ingest \
+  -H 'content-type: application/json' \
+  -d '{"v":1,"type":"task.started","agent":"my-agent","room":"Lab","label":"running tests"}'
+```
 
-| Preset | Purpose | Default Size |
-|--------|---------|-------------|
-| **Meeting** | Group discussions, strategy sessions | 4x3 |
-| **Workspace** | Individual desks, general work | 5x4 |
-| **Private** | 1:1 meetings, focus work | 2x2 |
-| **Social** | Break room, casual hangouts | 3x3 |
-| **Lab** | Testing, experiments, whiteboards | 4x4 |
+The agent appears in the world and **walks to the Lab**. Full protocol +
+connector guide: [docs/connectors.md](docs/connectors.md).
 
-Each preset renders different furniture per theme:
-- **Sci-Fi (neon-dark):** Holo-tables, pod workstations, floating chairs
-- **Modern Office (warm-office):** Wood tables, cubicle desks, couches
-- **Cyberpunk:** Neon-edge tables, wireframe chairs, glitch screens
-- **Minimal:** Clean white surfaces, simple geometry
+## The living world
 
-### Plugin Types
+- Agents auto-seat in chairs; events send them walking door-to-door
+  (BFS pathfinding over the room graph)
+- Activity icons above heads (💬 talking, 🔬 testing, 📡 sending, …) derived
+  from event types — no mapping config needed
+- Restless agents (energy slider) wander between their allowed rooms
+- Rolling activity feed + room glow on events
+- **Dashboard view** (toggle top-right): live agent tiles, activity stream,
+  per-room event counts
 
-| Type | What it does | Examples |
-|------|-------------|----------|
-| **View** | A rendering mode | `3d-office`, `dashboard` |
-| **Source** | A data connection | `openclaw-gateway`, `mock-data` |
-| **Theme** | Colors, lighting, mood | `neon-dark`, `warm-office`, `cyberpunk`, `minimal` |
+## Room presets & themes
+
+5 presets (meeting, workspace, private, social, lab) × 4 themes (Sci-Fi,
+Modern Office, Cyberpunk, Minimal) — furniture and materials morph per
+theme. Per-room custom colors and 5 procedural floor textures on top.
 
 ## Configuration
 
-Everything lives in `diorama.config.json`:
+Everything lives in `~/.diorama/config.json` (or a project's
+`diorama.config.json`):
 
 ```json
 {
   "name": "My Agent Office",
-  "gateway": {
-    "url": "ws://localhost:4040",
-    "token": "$OPENCLAW_TOKEN"
-  },
+  "sources": [{ "type": "claude-code" }, { "type": "codex" }, { "type": "ingest" }],
+  "gateway": { "url": "", "token": "" },
   "view": "3d-office",
   "theme": "neon-dark",
   "rooms": [
     { "preset": "meeting", "position": [0, 0], "size": [4, 3], "label": "Strategy Room" },
-    { "preset": "workspace", "position": [4, 0], "size": [5, 4], "label": "Workspace" },
-    { "preset": "lab", "position": [0, 3], "size": [4, 4], "label": "Lab" }
+    { "preset": "lab", "position": [4, 0], "size": [4, 4], "label": "Lab" }
   ],
   "agents": {
-    "aegis-prime": { "desk": "strategy-room-desk-1", "color": "#6366f1" }
+    "claude/my-app": { "desk": "lab-desk-1", "seat": "Lab::2", "allowedRooms": [], "energy": 0.7 }
   }
 }
 ```
 
 Environment variables (like `$OPENCLAW_TOKEN`) are resolved at runtime.
 
-## Onboarding Wizard
-
-Running the app without a config launches a 4-step wizard:
-
-1. **Connect** — Enter gateway URL + token, or use demo data
-2. **Build Your Office** — Live 3D viewport + sidebar with room presets, furniture catalog, floor styles, and theme switcher. Click a preset to auto-place a room, see it appear instantly in 3D. Drag to move, 8-handle resize, undo/redo.
-3. **Configure Agents** — Seat assignment, room access, and energy level per agent
-4. **Launch** — Review and save your layout
-
-## Templates
-
-Three built-in templates when you run `npx diorama init`:
-
-- **starter** — 3 rooms (meeting, workspace, lab), neon-dark theme, 3D view
-- **full-office** — 7 rooms with all 5 presets, neon-dark theme
-- **minimal** — single workspace room with dashboard view
-
-## Builder UI
-
-When running `npx diorama dev`, a sidebar lets you:
-
-- Add rooms from 5 preset types with auto-placement
-- Select rooms in 3D to edit properties
-- Resize rooms, update labels
-- Switch themes — furniture morphs in real time
-- Assign agents to rooms
-- Undo/redo with full history
-
-Changes auto-save to `diorama.config.json`.
-
 ## Packages
 
 | Package | Purpose |
 |---------|---------|
-| `@diorama/engine` | Core: config, plugin registry, event bus, geometry, agent state, room presets, auto-layout |
-| `@diorama/plugins` | Sources (OpenClaw gateway, mock data), themes (4 built-in) |
-| `@diorama/cli` | Project scaffolding and dev server |
-| `@diorama/ui` | Builder store with grid editor and undo/redo |
-| `@diorama/app` | Next.js app with 3D scene, wizard, and builder sidebar |
+| `@diorama/engine` | Pure core: config schema, event protocol, geometry, room graph + pathfinding, presets, seating, activity derivation |
+| `@diorama/plugins` | Connectors (OpenClaw, Codex, Claude Code, JSONL tailer), themes, LLM provider adapters |
+| `@diorama/ui` | Builder store (reducer + undo/redo), copilot tool surface |
+| `@diorama/cli` | `diorama init` scaffolding + dev server with gateway proxy |
+| `@diorama/app` | Next.js app: wizard, CAD editor, live 3D world, dashboard |
 
 ## Architecture
 
 ```
-OpenClaw Gateway (ws://...)
-    |
-    v
-Diorama Dev Server (localhost:3000)
-    |-- Reads ~/.diorama/config.json
-    |-- WebSocket proxy to gateway (Ed25519 auth server-side)
-    |-- Serves Next.js app
-    |
-    v
-Browser
-    |-- Source plugin receives gateway events
-    |-- Events normalized to { type, room, agent, payload, timestamp }
-    |-- EventBus broadcasts events
-    |-- Generic visualization: agent figures pulse, room glows on activity
-    |-- Room3D renders preset furniture per theme
+ Codex sessions ─┐  (jsonl tail)
+ Claude Code ────┤                                    ┌─ 3D office view (R3F)
+ HTTP pushes ────┼─▶ Event hub ─▶ SSE ─▶ EventBus ─▶ ├─ Dashboard view
+ OpenClaw ws ────┘   (server)           (browser)     └─ Activity feed
+
+ Copilot chat ─▶ /api/copilot/chat ─▶ your LLM (key stays server-side)
+      │                                    │
+      └──── tool calls ──▶ builder reducer ┘   (every AI edit = one undo)
 ```
+
+Engine stays pure (no React); all rendering lives in `packages/app`; the
+config file is the single source of truth.
 
 ## Development
 
 ```bash
-npm install
-npm test          # run the full suite (451+ tests)
-npm run typecheck # type checking
+npm test          # full suite (530+ tests; live-gateway tests need DIORAMA_LIVE_TESTS=1)
+npm run lint      # eslint
+npm run typecheck # tsc project references + app check
 ```
 
-Tests cover: config validation, plugin registration, coordinate transforms, event dispatch, room presets (furniture data for all themes), auto-layout placement, CLI scaffolding, template validation, builder undo/redo, overlap detection, config sync, and full integration flows.
+CI runs lint + typecheck + tests + build on Node 20 and 22.
 
 ## License
 

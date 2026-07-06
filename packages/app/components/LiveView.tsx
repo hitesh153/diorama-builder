@@ -257,7 +257,6 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
     });
 
     setAgentSnapshot(agents);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config]);
 
   // ---- Walking ----

@@ -1,0 +1,36 @@
+name: Release
+
+# Publishes the workspace packages to npm when a version tag is pushed.
+# Requires an NPM_TOKEN repository secret (automation token).
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build packages
+        run: |
+          npm run build --workspace=@diorama/engine
+          npm run build --workspace=@diorama/plugins
+          npm run build --workspace=@diorama/ui
+          npm run build --workspace=@diorama/cli
+      - name: Publish
+        run: |
+          for pkg in engine plugins ui cli; do
+            npm publish --workspace=@diorama/$pkg --access public
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

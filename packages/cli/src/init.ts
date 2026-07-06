@@ -70,10 +70,12 @@ export function scaffoldProject(opts: ScaffoldOptions): void {
   };
   fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify(pkg, null, 2));
 
-  // diorama.config.json
+  // diorama.config.json — v3 shape: sources[] is the connection mechanism,
+  // gateway stays configurable but empty (no fake defaults)
   const config = {
     name,
-    gateway: { url: "ws://localhost:4040", token: "$OPENCLAW_TOKEN" },
+    gateway: { url: "", token: "" },
+    sources: [],
     ...templateConfig,
     agents: {},
   };

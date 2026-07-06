@@ -113,6 +113,18 @@ npx next build        # app build (from packages/app)
 
 ## Changelog
 
+### 2026-07-06 — M5 Ship
+
+Productization pass — v3 plan (docs/specs/diorama-v3-world-builder.md) fully executed, M0→M5.
+
+- **Docs**: `docs/connectors.md` (push protocol, built-in connectors, write-a-connector), `docs/copilot.md` (BYO-LLM setup, tool surface). README rewritten around the real product (CAD editor, copilot, connectors, living world, dashboard).
+- **Templates v3**: `sources: []` added; fake `ws://localhost:4040` gateway defaults removed (both `templates/*.json` and the embedded copies in `cli/src/init.ts` — they are separate!). Template test updated accordingly.
+- **Onboarding tour** (`wizard/OnboardingTour.tsx`) — 4 coach-mark cards on first Build-step visit; localStorage `diorama.tour.v1`; verified: shows once, steps, stays dismissed.
+- **Publish pipeline**: CLI bin now points at `dist/bin.js` (was `src/bin.ts` — unrunnable when installed); `.github/workflows/release.yml` publishes @diorama/* on version tags, gated on lint+typecheck+test+build, needs an `NPM_TOKEN` secret. Actual first publish = maintainer action (npm login/org).
+- **Smoke-tested**: `node packages/cli/dist/bin.js init my-office starter` scaffolds v3 config; `PORT=3457 node dist/bin.js` boots the full app (wizard 200, detect API 200).
+- ⚠ Running `next build` in packages/app while the dev server is up corrupts the shared `.next` dir (both writes) — rm -rf .next + restart fixes it.
+- Gate: 531 tests, lint clean, typecheck clean, production `next build` clean.
+
 ### 2026-07-06 — M4 Living World
 
 Agents walk. Verified in-browser: an ingest event naming another room sent claude/ECC door-to-door into the Meeting Room.

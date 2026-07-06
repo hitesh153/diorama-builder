@@ -20,7 +20,10 @@ describe("template validation", () => {
         const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
         const config = parseConfig(raw);
         expect(config.name).toBeTruthy();
-        expect(config.gateway.url).toBeTruthy();
+        // v3 templates ship without a fake gateway URL — sources[] is the
+        // connection mechanism; gateway stays configurable but empty.
+        expect(typeof config.gateway.url).toBe("string");
+        expect(Array.isArray(config.sources)).toBe(true);
         expect(config.view).toBeTruthy();
         expect(config.theme).toBeTruthy();
       });

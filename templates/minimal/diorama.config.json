@@ -1,10 +1,29 @@
 {
   "name": "minimal-office",
-  "gateway": { "url": "ws://localhost:4040", "token": "$OPENCLAW_TOKEN" },
+  "gateway": {
+    "url": "",
+    "token": ""
+  },
   "view": "dashboard",
   "theme": "minimal",
   "rooms": [
-    { "preset": "workspace", "position": [0, 0], "size": [5, 4], "label": "General" }
+    {
+      "preset": "workspace",
+      "position": [
+        0,
+        0
+      ],
+      "size": [
+        5,
+        4
+      ],
+      "label": "General"
+    }
   ],
-  "agents": {}
+  "agents": {},
+  "sources": [
+    {
+      "type": "ingest"
+    }
+  ]
 }

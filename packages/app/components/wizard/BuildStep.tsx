@@ -13,6 +13,7 @@ import { FloorStylePicker } from "../builder/FloorStylePicker";
 import { FurnitureCatalogPanel } from "../builder/FurnitureCatalogPanel";
 import { InspectorPanel } from "../builder/InspectorPanel";
 import { CopilotPanel } from "../builder/CopilotPanel";
+import { OnboardingTour } from "./OnboardingTour";
 import { useFurniturePlacement } from "../../hooks/useFurniturePlacement";
 import {
   neonDarkTheme,
@@ -267,7 +268,8 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
   const canRedo = state.history.future.length > 0;
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      <OnboardingTour />
       {/* Top toolbar */}
       <ProToolbar
         canUndo={canUndo}
