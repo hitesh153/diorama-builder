@@ -6,6 +6,7 @@ import { Room3D } from "./scene/Room3D";
 import { AgentFigure3D } from "./scene/AgentFigure3D";
 import { useGatewayEvents } from "@/hooks/useGatewayEvents";
 import { useMockEventSource } from "@/hooks/useMockEventSource";
+import { useIngestEvents } from "@/hooks/useIngestEvents";
 import {
   createAgentState,
   toWorld,
@@ -79,13 +80,22 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
   const [roomGlows, setRoomGlows] = useState<Record<number, number>>({});
   const glowTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
-  const isDemoMode = !config.gateway.url || config.gateway.url === "";
+  const sources = config.sources ?? [];
+  const hasGateway = Boolean(config.gateway.url) || sources.some((s) => s.type === "openclaw");
+  const localSources = sources
+    .filter((s) => s.type === "codex" || s.type === "claude-code" || s.type === "ingest")
+    .map((s) => s.type);
+  // Demo mode only when NOTHING is connected
+  const isDemoMode = !hasGateway && localSources.length === 0;
 
   useEffect(() => {
-    if (!isDemoMode) connect();
-  }, [connect, isDemoMode]);
+    if (hasGateway) connect();
+  }, [connect, hasGateway]);
 
   useMockEventSource(eventBus, isDemoMode, config.rooms.map((r) => r.label));
+  // Local connectors + pushed events arrive via the server's SSE stream.
+  // "ingest" costs nothing to include; codex/claude-code start their tailers.
+  useIngestEvents(eventBus, localSources.length > 0, localSources);
 
   // Rooms centroid + bounding radius for camera framing
   const { roomsCenter, fitRadius } = useMemo<{
@@ -243,22 +253,46 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
       }
     }
 
-    if (!event.agent || !event.room) return;
+    if (!event.agent) return;
 
-    // Find the agent
-    const agentId = agentSnapshot.find(
+    // Find the agent — or materialize an unknown one (live sources can
+    // introduce agents that aren't in the saved config)
+    let agentId = agentSnapshot.find(
       (a) => normalizeRoomName(a.id) === normalizeRoomName(event.agent) || normalizeRoomName(a.id).includes(normalizeRoomName(event.agent)),
     )?.id;
-    if (!agentId) return;
-
-    // Derive the target room's preset for activity mapping
-    const matchedIdx = matchRoomIndex(config.rooms, event.room);
-    const targetRoom = matchedIdx >= 0 ? config.rooms[matchedIdx] : config.rooms[0];
+    if (!agentId) {
+      const roomIdx = Math.max(matchRoomIndex(config.rooms, event.room ?? ""), 0);
+      const room = config.rooms[roomIdx];
+      if (!room) return;
+      const center = getRoomWorldCenter(room);
+      const n = agentSnapshot.length;
+      const state = createAgentState({
+        x: center[0] + Math.cos(n * GOLDEN_ANGLE) * 1.1,
+        z: center[2] + Math.sin(n * GOLDEN_ANGLE) * 1.1,
+        seatRotation: 0,
+      });
+      agentId = event.agent;
+      setAgentSnapshot((prev) => [
+        ...prev,
+        { id: event.agent, state, color: AGENT_COLORS[prev.length % AGENT_COLORS.length], energy: 0.5 },
+      ]);
+    }
+    // Roomless events (local connectors don't know rooms) fall back to the
+    // agent's assigned room so activity + feed still work.
+    let roomIdx = event.room ? matchRoomIndex(config.rooms, event.room) : -1;
+    if (roomIdx < 0) {
+      const desk = config.agents[agentId]?.desk?.replace(/-desk-\d+$/, "") ?? "";
+      roomIdx = matchRoomIndex(config.rooms, desk);
+    }
+    const targetRoom = roomIdx >= 0 ? config.rooms[roomIdx] : config.rooms[0];
     const preset = targetRoom?.preset ?? "workspace";
 
     // Set activity
     const activity = deriveActivity(event.type, preset);
-    const label = formatEventLabel(event.type, event.agent, event.room, preset);
+    const customLabel = (event.payload as { label?: string } | null)?.label;
+    const label = customLabel
+      ? `${event.agent} ${customLabel}`
+      : formatEventLabel(event.type, event.agent, event.room || (targetRoom?.label ?? ""), preset);
 
     agentActivitiesRef.current.set(agentId, {
       activity,
@@ -334,10 +368,26 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
             width: 8,
             height: 8,
             borderRadius: "50%",
-            background: isDemoMode ? "#ffdd6b" : status === "connected" ? "#6bff6b" : status === "connecting" ? "#ffdd6b" : "#ff6b6b",
+            background: isDemoMode
+              ? "#ffdd6b"
+              : !hasGateway
+                ? "#6bff6b"
+                : status === "connected"
+                  ? "#6bff6b"
+                  : status === "connecting"
+                    ? "#ffdd6b"
+                    : "#ff6b6b",
           }}
         />
-        {isDemoMode ? "Demo" : status === "connected" ? "Live" : status === "connecting" ? "Connecting..." : "Disconnected"}
+        {isDemoMode
+          ? "Demo"
+          : !hasGateway
+            ? `Live · ${localSources.filter((s) => s !== "ingest").join(" + ") || "ingest"}`
+            : status === "connected"
+              ? "Live"
+              : status === "connecting"
+                ? "Connecting..."
+                : "Disconnected"}
       </div>
 
       {/* Activity feed */}

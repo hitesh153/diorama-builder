@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { RoomConfig } from "@diorama/engine";
+import type { RoomConfig, SourceConfig } from "@diorama/engine";
 import type { AgentBehavior } from "./AgentBehaviorStep";
 
 interface LaunchStepProps {
   gatewayUrl: string;
   gatewayToken: string;
+  sources: SourceConfig[];
   theme: string;
   rooms: RoomConfig[];
   agentAssignments: Record<string, string>;
@@ -15,7 +16,7 @@ interface LaunchStepProps {
   onBack: () => void;
 }
 
-export function LaunchStep({ gatewayUrl, gatewayToken, theme, rooms, agentAssignments, agentBehaviors, onBack }: LaunchStepProps) {
+export function LaunchStep({ gatewayUrl, gatewayToken, sources, theme, rooms, agentAssignments, agentBehaviors, onBack }: LaunchStepProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +28,7 @@ export function LaunchStep({ gatewayUrl, gatewayToken, theme, rooms, agentAssign
     const config = {
       name: "My Diorama Office",
       gateway: { url: gatewayUrl, token: gatewayToken },
+      sources,
       view: "3d-office",
       theme,
       rooms,
@@ -89,9 +91,11 @@ export function LaunchStep({ gatewayUrl, gatewayToken, theme, rooms, agentAssign
         </div>
 
         <div>
-          <span style={{ fontSize: 12, color: "#999" }}>Gateway</span>
+          <span style={{ fontSize: 12, color: "#999" }}>Sources</span>
           <p style={{ fontSize: 14, margin: "4px 0 0" }}>
-            {gatewayUrl || "(demo mode)"}
+            {sources.length > 0
+              ? sources.map((s) => s.type).join(", ")
+              : gatewayUrl || "(demo mode)"}
           </p>
         </div>
       </div>

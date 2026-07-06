@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { ConnectStep } from "@/components/wizard/ConnectStep";
 import { AgentBehaviorStep, type AgentBehavior } from "@/components/wizard/AgentBehaviorStep";
 import { LaunchStep } from "@/components/wizard/LaunchStep";
-import type { RoomConfig } from "@diorama/engine";
+import type { RoomConfig, SourceConfig } from "@diorama/engine";
 
 const BuildStep = dynamic(
   () => import("@/components/wizard/BuildStep").then((m) => ({ default: m.BuildStep })),
@@ -20,6 +20,7 @@ interface WizardState {
   gatewayUrl: string;
   gatewayToken: string;
   useDemoData: boolean;
+  sources: SourceConfig[];
   agents: string[];
   theme: string;
   rooms: RoomConfig[];
@@ -33,6 +34,7 @@ export default function WizardPage() {
     gatewayUrl: "",
     gatewayToken: "",
     useDemoData: false,
+    sources: [],
     agents: [],
     theme: "neon-dark",
     rooms: [],
@@ -78,20 +80,38 @@ export default function WizardPage() {
         {step === 1 && (
           <div style={{ display: "flex", justifyContent: "center", padding: "48px 24px" }}>
             <ConnectStep
-              onNext={({ url, token, useDemoData: demo }) => {
-                setState((s) => ({ ...s, gatewayUrl: url, gatewayToken: token, useDemoData: demo }));
-                // Discover agents
-                fetch("/api/gateway/discover", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ url, token, useDemoData: demo }),
-                })
-                  .then((res) => res.json())
-                  .then((data) => {
-                    const agentNames = (data.agents ?? []).map((a: { id: string }) => a.id);
-                    setState((s) => ({ ...s, agents: agentNames }));
-                  })
-                  .catch(() => {});
+              onNext={({ url, token, useDemoData: demo, sources }) => {
+                setState((s) => ({ ...s, gatewayUrl: url, gatewayToken: token, useDemoData: demo, sources }));
+                // Roster: local sources (codex/claude-code) list their agents;
+                // gateway/demo discovery merges on top.
+                const localTypes = sources
+                  .filter((s) => s.type === "codex" || s.type === "claude-code")
+                  .map((s) => s.type);
+                const rosterCalls: Promise<string[]>[] = [];
+                if (localTypes.length > 0) {
+                  rosterCalls.push(
+                    fetch(`/api/sources/roster?types=${localTypes.join(",")}`)
+                      .then((r) => r.json())
+                      .then((d: { agents?: string[] }) => d.agents ?? [])
+                      .catch(() => []),
+                  );
+                }
+                if (demo || url) {
+                  rosterCalls.push(
+                    fetch("/api/gateway/discover", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ url, token, useDemoData: demo }),
+                    })
+                      .then((res) => res.json())
+                      .then((data) => (data.agents ?? []).map((a: { id: string }) => a.id))
+                      .catch(() => []),
+                  );
+                }
+                Promise.all(rosterCalls).then((lists) => {
+                  const merged = [...new Set(lists.flat())];
+                  setState((s) => ({ ...s, agents: merged }));
+                });
                 setStep(2);
               }}
             />
@@ -132,6 +152,7 @@ export default function WizardPage() {
             <LaunchStep
               gatewayUrl={state.gatewayUrl}
               gatewayToken={state.gatewayToken}
+              sources={state.sources}
               theme={state.theme}
               rooms={state.rooms}
               agentAssignments={state.agentAssignments}

@@ -46,6 +46,17 @@ const GatewaySchema = z.object({
   token: z.string().optional(),
 });
 
+/**
+ * An agent event source. `openclaw` uses the gateway settings; `codex` and
+ * `claude-code` tail local session files; `ingest` accepts pushed events on
+ * the public protocol (POST /api/ingest).
+ */
+const SourceSchema = z.object({
+  type: z.enum(["openclaw", "codex", "claude-code", "ingest"]),
+  /** Optional override (gateway URL, sessions dir…) */
+  target: z.string().optional(),
+});
+
 const DioramaConfigSchema = z.object({
   name: z.string(),
   gateway: GatewaySchema,
@@ -53,12 +64,15 @@ const DioramaConfigSchema = z.object({
   theme: z.string().default("neon-dark"),
   rooms: z.array(RoomSchema).default([]),
   agents: z.record(z.string(), AgentAssignmentSchema).default({}),
+  /** Connected agent sources. Empty/omitted = legacy gateway-or-demo behavior. */
+  sources: z.array(SourceSchema).default([]),
 });
 
 export type DioramaConfig = z.infer<typeof DioramaConfigSchema>;
 export type RoomConfig = z.infer<typeof RoomSchema>;
 export type RoomColors = z.infer<typeof RoomColorsSchema>;
 export type AgentAssignment = z.infer<typeof AgentAssignmentSchema>;
+export type SourceConfig = z.infer<typeof SourceSchema>;
 
 export class DioramaConfigError extends Error {
   constructor(message: string) {

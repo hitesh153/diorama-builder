@@ -113,6 +113,21 @@ npx next build        # app build (from packages/app)
 
 ## Changelog
 
+### 2026-07-06 — M3 Connectors (bring your own agents)
+
+Generic agent-source architecture — verified live in-browser with this machine's real Codex (32 sessions) and Claude Code (8 projects) data, plus a curl-pushed custom agent that materialized in the 3D world.
+
+- **Public event protocol** (`engine/protocol.ts`) — versioned Zod contract: `{v:1, type, agent, room?, label?, ts?, payload?}`, single or ≤500-batch. `parseIngestBody` (branch-parsed for field-path errors), `ingestToDioramaEvent`.
+- **JSONL tailer primitive** (`plugins/sources/jsonlTail.ts`) — polling directory tailer under every session-file connector: per-file offsets, partial-line carry, truncation recovery, new-file discovery, live-only vs replay, 24h age filter.
+- **Codex connector** (`sources/codexSessions.ts`) — tails ~/.codex/sessions/**.jsonl; agent = `codex/<project>` from session_meta.cwd; maps task_started/agent_message/web_search_end/task_complete/function_call → normalized events. `detectCodexSessions()`.
+- **Claude Code connector** (`sources/claudeCode.ts`) — tails ~/.claude/projects/<slug>/*.jsonl; agent = `claude/<project>`; assistant text→message.sent, tool_use→tool.call; sidechains skipped. `detectClaudeCode()`. Both honor DIORAMA_* env dir overrides (tests).
+- **⚠ fs-module boundary** — connectors + credentials are NOT exported from the plugins barrel (the app imports the barrel client-side → "Can't resolve 'fs'"). Server code imports deep paths (`@diorama/plugins/sources/codexSessions`).
+- **Event hub** (`app/lib/eventHub.ts`) — server-side pub/sub with refcounted connector lifecycle. **State anchored on globalThis** — Next bundles each route separately, so plain module singletons would give POST /api/ingest and the SSE stream different hubs (bug found live, fixed).
+- **Routes** — `POST /api/ingest` (public protocol), `GET /api/ingest/stream?sources=` (SSE fan-out + starts requested connectors while subscribed, keep-alive comments), `GET /api/sources/detect` (runtime cards), `GET /api/sources/roster?types=` (agent names from session files).
+- **Wizard step 1 redesign** (ConnectStep) — "Detect my agents": pre-checked cards for available runtimes, expandable OpenClaw gateway form, push-events card, demo fallback. Roster merges local sources + gateway/demo discovery. `sources[]` flows through LaunchStep into config (new `sources` field in config schema).
+- **LiveView** — `useIngestEvents` SSE hook feeds the shared EventBus; demo mode only when nothing connected; badge shows "Live · codex + claude-code"; unknown agents materialize on first event (golden-angle placement); roomless connector events fall back to the agent's assigned room; ingest `label` honored in the feed.
+- Tests: 531 passing (9 protocol + 8 jsonlTail + 11 connectors added).
+
 ### 2026-07-06 — M2 Copilot Chat
 
 AI copilot that builds the world through the reducer — bring-your-own-LLM. Verified end-to-end in the browser against a mock OpenAI-compatible server (canned tool calls).

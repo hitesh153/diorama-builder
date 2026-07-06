@@ -1,6 +1,6 @@
 // Config
 export { parseConfig, DioramaConfigError } from "./config";
-export type { DioramaConfig, RoomConfig, RoomColors, AgentAssignment } from "./config";
+export type { DioramaConfig, RoomConfig, RoomColors, AgentAssignment, SourceConfig } from "./config";
 
 // Plugins
 export {
@@ -73,6 +73,16 @@ export {
   resolveRoomDoors,
 } from "./roomGraph";
 export type { RoomGraph, RoomNode, RoomEdge, DoorWorldPos } from "./roomGraph";
+
+// Event Protocol (public ingest contract)
+export {
+  PROTOCOL_VERSION,
+  IngestEventSchema,
+  IngestBatchSchema,
+  parseIngestBody,
+  ingestToDioramaEvent,
+} from "./protocol";
+export type { IngestEvent } from "./protocol";
 
 // Seating
 export {
