@@ -15,6 +15,11 @@ const LiveView = dynamic(() => import("@/components/LiveView").then((m) => ({ de
   ),
 });
 
+const DashboardView = dynamic(
+  () => import("@/components/DashboardView").then((m) => ({ default: m.DashboardView })),
+  { ssr: false }
+);
+
 const BuilderSidebar = dynamic(
   () => import("@/components/builder/BuilderSidebar").then((m) => ({ default: m.BuilderSidebar })),
   { ssr: false }
@@ -53,21 +58,72 @@ export default function Home() {
 
   if (!config) return null;
 
+  const view = config.view === "dashboard" ? "dashboard" : "3d-office";
+
+  const setView = (nextView: string) => {
+    const nextConfig = { ...config, view: nextView };
+    setConfig(nextConfig);
+    fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nextConfig),
+    }).catch(() => {});
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      <div style={{ flex: 1 }}>
-        <LiveView
+      <div style={{ flex: 1, position: "relative" }}>
+        {/* View switcher */}
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 20,
+            display: "flex",
+            background: "rgba(10,17,28,0.85)",
+            border: "1px solid #1a2535",
+            borderRadius: 7,
+            overflow: "hidden",
+          }}
+        >
+          {(["3d-office", "dashboard"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              style={{
+                padding: "6px 12px",
+                background: view === v ? "#1a2535" : "transparent",
+                color: view === v ? "#e0e0e0" : "#667",
+                border: "none",
+                fontSize: 11,
+                fontFamily: "'SF Mono', 'Fira Code', monospace",
+                cursor: "pointer",
+              }}
+            >
+              {v === "3d-office" ? "3D" : "Dashboard"}
+            </button>
+          ))}
+        </div>
+
+        {view === "dashboard" ? (
+          <DashboardView config={config} />
+        ) : (
+          <LiveView
+            config={config}
+            selectedRoom={selectedRoom}
+            onSelectRoom={setSelectedRoom}
+          />
+        )}
+      </div>
+      {view === "3d-office" && (
+        <BuilderSidebar
           config={config}
           selectedRoom={selectedRoom}
+          onConfigChange={setConfig}
           onSelectRoom={setSelectedRoom}
         />
-      </div>
-      <BuilderSidebar
-        config={config}
-        selectedRoom={selectedRoom}
-        onConfigChange={setConfig}
-        onSelectRoom={setSelectedRoom}
-      />
+      )}
     </div>
   );
 }

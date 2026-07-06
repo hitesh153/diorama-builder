@@ -113,6 +113,17 @@ npx next build        # app build (from packages/app)
 
 ## Changelog
 
+### 2026-07-06 — M4 Living World
+
+Agents walk. Verified in-browser: an ingest event naming another room sent claude/ECC door-to-door into the Meeting Room.
+
+- **Pathfinding re-wired** (LiveView) — the roomGraph engine (built 2026-04-09, unwired since the same day) now drives movement: event names a room ≠ agent's current room → `findRoomContaining` → `findRoomPath` (BFS) → `generateWaypoints` (door-to-door) → SET_PATH; direct-line fallback for disconnected rooms.
+- **In-place state mutation pattern** — AgentFigure3D reads state.x/z per frame in useFrame, so the walking rAF loop MUTATES AgentState objects (Object.assign with the pure reducer's result) and React only re-renders on mode flips (`modeVersion` bump) — zero per-frame React churn.
+- **Seat lifecycle** — seat pools memoized; taken-set/agent-seat/standing-count in refs shared by init + walking; walking frees the old chair, reserves the destination (chair first, standing-ring fallback), SIT on arrival.
+- **Energy wandering** — every 4s an idle agent rolls energy×0.18 to visit a random allowed room (`allowedRooms` respected; empty = anywhere).
+- **View routing** — `config.view` finally does something: 3D ⇄ Dashboard switcher (top-right, persisted to config). DashboardView rebuilt as a live surface: agent tiles (activity icon, last event, room, ago), rolling 40-entry stream, per-room event counts — same event sources as the 3D view.
+- Dashboard tile updater made idempotent (exact-id match before fuzzy; batched SSE events could double-insert an unknown agent → duplicate React keys).
+
 ### 2026-07-06 — M3 Connectors (bring your own agents)
 
 Generic agent-source architecture — verified live in-browser with this machine's real Codex (32 sessions) and Claude Code (8 projects) data, plus a curl-pushed custom agent that materialized in the 3D world.

@@ -9,6 +9,12 @@ import { useMockEventSource } from "@/hooks/useMockEventSource";
 import { useIngestEvents } from "@/hooks/useIngestEvents";
 import {
   createAgentState,
+  updateAgentState,
+  buildRoomGraph,
+  findRoomPath,
+  generateWaypoints,
+  findRoomContaining,
+  ROOM_PRESETS,
   toWorld,
   deriveActivity,
   formatEventLabel,
@@ -125,19 +131,20 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
     id: string; state: AgentState; color: string; energy: number;
   }>>([]);
 
-  // Activity tracking
-  const agentActivitiesRef = useRef<Map<string, ActivityRecord>>(new Map());
-  const [activitySnapshot, setActivitySnapshot] = useState<Map<string, ActivityRecord>>(new Map());
-  const [feedEntries, setFeedEntries] = useState<FeedEntry[]>([]);
+  // Seat + walking bookkeeping (shared by init, events, and wander loop).
+  // AgentState objects are MUTATED in place — AgentFigure3D reads x/z per
+  // frame via useFrame, so movement needs no React re-render. modeVersion
+  // bumps only on mode changes (seated yOffset is render-time).
+  const seatTakenRef = useRef<Set<string>>(new Set());
+  const agentSeatRef = useRef<Map<string, string>>(new Map());
+  const standCountRef = useRef<Map<number, number>>(new Map());
+  const pendingSeatRef = useRef<Map<string, { key: string; rotation: number } | null>>(new Map());
+  const [, setModeVersion] = useState(0);
 
-  // Initialize agents — explicit seats first, then auto-seat, then stand
-  useEffect(() => {
-    const agentEntries = Object.entries(config.agents);
+  const roomGraph = useMemo(() => buildRoomGraph(config.rooms, ROOM_PRESETS), [config.rooms]);
 
-    // Seat pool per room over *resolved* furniture (explicit or preset),
-    // keyed by furniture index so explicit refs and auto-assignment never
-    // double-book the same chair.
-    const seatPool = new Map<number, Array<{ furnitureIndex: number; pos: [number, number, number]; rotation: number }>>();
+  const seatPools = useMemo(() => {
+    const pools = new Map<number, Array<{ furnitureIndex: number; pos: [number, number, number]; rotation: number }>>();
     config.rooms.forEach((room, roomIdx) => {
       const furniture = resolveRoomFurniture(room, config.theme);
       const roomCenter = getRoomWorldCenter(room);
@@ -151,46 +158,60 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
           });
         }
       });
-      seatPool.set(roomIdx, seats);
+      pools.set(roomIdx, seats);
     });
+    return pools;
+  }, [config.rooms, config.theme]);
 
-    const taken = new Set<string>(); // "roomIdx::furnitureIndex"
-    const standingCount = new Map<number, number>();
+  // Activity tracking
+  const agentActivitiesRef = useRef<Map<string, ActivityRecord>>(new Map());
+  const [activitySnapshot, setActivitySnapshot] = useState<Map<string, ActivityRecord>>(new Map());
+  const [feedEntries, setFeedEntries] = useState<FeedEntry[]>([]);
 
-    type Placement = { x: number; z: number; seatRotation: number | null };
+  // Placement helpers over the shared seat refs
+  type Placement = { x: number; z: number; seatRotation: number | null; seatKey: string | null };
 
-    const takeSeat = (roomIdx: number, furnitureIndex: number): Placement | null => {
-      const key = `${roomIdx}::${furnitureIndex}`;
-      if (taken.has(key)) return null;
-      const seat = seatPool.get(roomIdx)?.find((s) => s.furnitureIndex === furnitureIndex);
-      if (!seat) return null;
-      taken.add(key);
-      return { x: seat.pos[0], z: seat.pos[2], seatRotation: seat.rotation };
+  const takeSeat = useCallback((roomIdx: number, furnitureIndex: number): Placement | null => {
+    const key = `${roomIdx}::${furnitureIndex}`;
+    if (seatTakenRef.current.has(key)) return null;
+    const seat = seatPools.get(roomIdx)?.find((s) => s.furnitureIndex === furnitureIndex);
+    if (!seat) return null;
+    seatTakenRef.current.add(key);
+    return { x: seat.pos[0], z: seat.pos[2], seatRotation: seat.rotation, seatKey: key };
+  }, [seatPools]);
+
+  const takeNextFreeSeat = useCallback((roomIdx: number): Placement | null => {
+    for (const seat of seatPools.get(roomIdx) ?? []) {
+      const placed = takeSeat(roomIdx, seat.furnitureIndex);
+      if (placed) return placed;
+    }
+    return null;
+  }, [seatPools, takeSeat]);
+
+  const standInRoom = useCallback((roomIdx: number): Placement => {
+    const room = config.rooms[roomIdx];
+    const center = getRoomWorldCenter(room);
+    const n = standCountRef.current.get(roomIdx) ?? 0;
+    standCountRef.current.set(roomIdx, n + 1);
+    // Golden-angle ring inside the room — no two agents share a spot.
+    const maxRadius = (Math.min(room.size[0], room.size[1]) * GRID_WORLD) / 2 - 0.9;
+    const radius = Math.min(0.9 + 0.35 * Math.floor(n / 6), Math.max(maxRadius, 0.6));
+    const angle = n * GOLDEN_ANGLE;
+    return {
+      x: center[0] + Math.cos(angle) * radius,
+      z: center[2] + Math.sin(angle) * radius,
+      seatRotation: null,
+      seatKey: null,
     };
+  }, [config.rooms]);
 
-    const takeNextFreeSeat = (roomIdx: number): Placement | null => {
-      for (const seat of seatPool.get(roomIdx) ?? []) {
-        const placed = takeSeat(roomIdx, seat.furnitureIndex);
-        if (placed) return placed;
-      }
-      return null;
-    };
-
-    const standInRoom = (roomIdx: number): Placement => {
-      const room = config.rooms[roomIdx];
-      const center = getRoomWorldCenter(room);
-      const n = standingCount.get(roomIdx) ?? 0;
-      standingCount.set(roomIdx, n + 1);
-      // Golden-angle ring inside the room — no two agents share a spot.
-      const maxRadius = (Math.min(room.size[0], room.size[1]) * GRID_WORLD) / 2 - 0.9;
-      const radius = Math.min(0.9 + 0.35 * Math.floor(n / 6), Math.max(maxRadius, 0.6));
-      const angle = n * GOLDEN_ANGLE;
-      return {
-        x: center[0] + Math.cos(angle) * radius,
-        z: center[2] + Math.sin(angle) * radius,
-        seatRotation: null,
-      };
-    };
+  // Initialize agents — explicit seats first, then auto-seat, then stand
+  useEffect(() => {
+    const agentEntries = Object.entries(config.agents);
+    seatTakenRef.current.clear();
+    agentSeatRef.current.clear();
+    standCountRef.current.clear();
+    pendingSeatRef.current.clear();
 
     // Pass 1: agents with an explicit seat reference claim their chair.
     const placements = new Map<string, Placement>();
@@ -226,6 +247,7 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
         state.mode = "seated" as const;
         state.seatRotation = placed.seatRotation;
       }
+      if (placed.seatKey) agentSeatRef.current.set(agentId, placed.seatKey);
       return {
         id: agentId,
         state,
@@ -235,7 +257,104 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
     });
 
     setAgentSnapshot(agents);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config]);
+
+  // ---- Walking ----
+
+  /** Send an agent walking to a room (frees its seat, reserves the target). */
+  const walkAgentTo = useCallback((agentId: string, targetRoomIdx: number) => {
+    const entry = agentSnapshot.find((a) => a.id === agentId);
+    const targetRoom = config.rooms[targetRoomIdx];
+    if (!entry || !targetRoom) return;
+    const st = entry.state;
+    if (st.mode === "walking") return; // already en route
+
+    const fromRoom = findRoomContaining(config.rooms, st.x, st.z);
+    if (fromRoom === targetRoom.label) return; // already there
+
+    // Free the current seat
+    const currentSeat = agentSeatRef.current.get(agentId);
+    if (currentSeat) {
+      seatTakenRef.current.delete(currentSeat);
+      agentSeatRef.current.delete(agentId);
+    }
+
+    // Reserve a destination (chair first, else standing spot)
+    const placed = takeNextFreeSeat(targetRoomIdx) ?? standInRoom(targetRoomIdx);
+    pendingSeatRef.current.set(
+      agentId,
+      placed.seatKey ? { key: placed.seatKey, rotation: placed.seatRotation ?? 0 } : null,
+    );
+    if (placed.seatKey) agentSeatRef.current.set(agentId, placed.seatKey);
+
+    // Route via doors when the graph connects the rooms; else walk direct.
+    let waypoints: [number, number, number][] = [];
+    if (fromRoom) {
+      const roomPath = findRoomPath(roomGraph, fromRoom, targetRoom.label);
+      if (roomPath.length > 0) {
+        waypoints = generateWaypoints(roomGraph, roomPath, [st.x, st.z], [placed.x, placed.z]);
+      }
+    }
+    if (waypoints.length === 0) waypoints = [[placed.x, 0, placed.z]];
+
+    Object.assign(st, updateAgentState({ ...st, mode: "idle", seatRotation: null }, { type: "SET_PATH", path: waypoints }));
+    setModeVersion((v) => v + 1);
+  }, [agentSnapshot, config.rooms, roomGraph, takeNextFreeSeat, standInRoom]);
+
+  const walkAgentToRef = useRef(walkAgentTo);
+  walkAgentToRef.current = walkAgentTo;
+
+  // Walking tick loop — mutates AgentState in place; publishes only mode flips
+  useEffect(() => {
+    let raf: number;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const delta = Math.min((now - last) / 1000, 0.1);
+      last = now;
+      let modeChanged = false;
+      for (const entry of agentSnapshot) {
+        const st = entry.state;
+        if (st.mode !== "walking") continue;
+        const next = updateAgentState(st, { type: "TICK", delta });
+        const arrived = next.mode !== "walking";
+        Object.assign(st, next);
+        if (arrived) {
+          const pending = pendingSeatRef.current.get(entry.id);
+          pendingSeatRef.current.delete(entry.id);
+          if (pending) {
+            Object.assign(st, updateAgentState(st, { type: "SIT", seatRotation: pending.rotation }));
+          }
+          modeChanged = true;
+        }
+      }
+      if (modeChanged) setModeVersion((v) => v + 1);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [agentSnapshot]);
+
+  // Energy-driven wandering: idle, restless agents occasionally visit
+  // another allowed room. Probability per 4s check scales with energy.
+  useEffect(() => {
+    if (config.rooms.length < 2) return;
+    const timer = setInterval(() => {
+      for (const entry of agentSnapshot) {
+        if (entry.state.mode === "walking") continue;
+        if (Math.random() > entry.energy * 0.18) continue;
+        const allowed = config.agents[entry.id]?.allowedRooms ?? [];
+        const candidateIdxs = config.rooms
+          .map((room, idx) => ({ room, idx }))
+          .filter(({ room }) => allowed.length === 0 || allowed.includes(room.label))
+          .map(({ idx }) => idx);
+        if (candidateIdxs.length === 0) continue;
+        const target = candidateIdxs[Math.floor(Math.random() * candidateIdxs.length)];
+        walkAgentToRef.current(entry.id, target);
+      }
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [agentSnapshot, config]);
 
   // Handle events — activity + glow only, no movement
   const handleEvent = useCallback((event: DioramaEvent) => {
@@ -286,6 +405,11 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
     }
     const targetRoom = roomIdx >= 0 ? config.rooms[roomIdx] : config.rooms[0];
     const preset = targetRoom?.preset ?? "workspace";
+
+    // Walk to the event's room when the event names one explicitly
+    if (event.room && roomIdx >= 0) {
+      walkAgentToRef.current(agentId, roomIdx);
+    }
 
     // Set activity
     const activity = deriveActivity(event.type, preset);
