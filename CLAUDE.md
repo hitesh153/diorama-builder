@@ -113,6 +113,15 @@ npx next build        # app build (from packages/app)
 
 ## Changelog
 
+### 2026-07-07 — App harmony: Welcome home, shared TopBar, one navigation
+
+User feedback: "why do I have to go to /wizard — explain the product first". The app now has one coherent shell.
+
+- **`components/TopBar.tsx`** — shared 48px app bar on every page (wordmark links home; center/actions slots). Wizard puts its stepper in the center slot; the live page puts an Office|Dashboard segmented switcher in the center and a "Redesign office" ghost button on the right.
+- **`components/Welcome.tsx`** — `/` with no config no longer redirects to /wizard: it renders a home screen (hero line, 3 feature rows, "✓ Found on this machine: Codex CLI · Claude Code" from /api/sources/detect) with two paths: "Design your office" → wizard, "Try the demo" → POSTs a canned 4-room demo config and reloads straight into the live world.
+- `app/page.tsx` restructured: TopBar + content column; view switcher moved from a floating overlay into the bar.
+- Browser-verified: Welcome renders with real detection; "Try the demo" lands in a live demo office with the streaming feed.
+
 ### 2026-07-07 — UI redesign: precision-instrument design system
 
 Full visual redesign after user feedback ("looks like divs thrown together"). Direction chosen via interview: precision instrument, Figma-grade, dark. PRODUCT.md + DESIGN.md added at repo root — read them before any UI work.

@@ -6,6 +6,7 @@ import { ConnectStep } from "@/components/wizard/ConnectStep";
 import { AgentBehaviorStep, type AgentBehavior } from "@/components/wizard/AgentBehaviorStep";
 import { LaunchStep } from "@/components/wizard/LaunchStep";
 import type { RoomConfig, SourceConfig } from "@diorama/engine";
+import { TopBar } from "@/components/TopBar";
 
 const BuildStep = dynamic(
   () => import("@/components/wizard/BuildStep").then((m) => ({ default: m.BuildStep })),
@@ -118,28 +119,14 @@ export default function WizardPage() {
 
   return (
     <div style={{ height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {/* App bar */}
-      <header
-        style={{
-          height: 48,
-          flexShrink: 0,
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
-          alignItems: "center",
-          padding: "0 16px",
-          background: "var(--surface)",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span aria-hidden style={{ color: "var(--accent)", fontSize: 14, lineHeight: 1 }}>◆</span>
-          <span style={{ fontSize: 13, fontWeight: 650, letterSpacing: "0.01em" }}>Diorama</span>
-        </div>
-        <Stepper current={step} />
-        <div style={{ justifySelf: "end", fontSize: 12, color: "var(--ink-3)" }}>
-          {step === 2 ? "Auto-saves to your config on launch" : ""}
-        </div>
-      </header>
+      <TopBar
+        center={<Stepper current={step} />}
+        actions={
+          <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
+            {step === 2 ? "Saved to your config on launch" : ""}
+          </span>
+        }
+      />
 
       {/* Step content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
