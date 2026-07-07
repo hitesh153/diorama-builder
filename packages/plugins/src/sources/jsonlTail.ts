@@ -30,6 +30,10 @@ export interface JsonlTailOptions {
   onRecord: (record: unknown, filePath: string) => void;
   /** Called when a line fails to parse (optional). */
   onParseError?: (line: string, filePath: string) => void;
+  /** Called at the end of every scan pass (after all onRecord calls) — lets
+   * connectors run time-based checks (e.g. attention detection) on the same
+   * cadence as the poll, with no extra timers. */
+  onScan?: () => void;
 }
 
 export interface JsonlTailHandle {
@@ -62,6 +66,7 @@ export function tailJsonlDirectory(options: JsonlTailOptions): JsonlTailHandle {
     maxAgeMs = 24 * 60 * 60 * 1000,
     onRecord,
     onParseError,
+    onScan,
   } = options;
 
   // Per-file byte offset + partial-line carry
@@ -125,6 +130,7 @@ export function tailJsonlDirectory(options: JsonlTailOptions): JsonlTailHandle {
       }
     }
     firstScan = false;
+    onScan?.();
   };
 
   scan();

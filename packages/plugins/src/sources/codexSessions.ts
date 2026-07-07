@@ -3,6 +3,13 @@ import os from "os";
 import path from "path";
 import type { DioramaEvent } from "@diorama/engine";
 import { tailJsonlDirectory, type JsonlTailHandle } from "./jsonlTail";
+import {
+  ATTENTION_THRESHOLD_MS,
+  createAttentionState,
+  detectAttention,
+  noteRecord,
+  type AttentionState,
+} from "./attention";
 
 /**
  * Codex CLI connector — visualizes Codex sessions as Diorama agents by
@@ -33,6 +40,30 @@ interface CodexRecord {
 /** Per-file agent naming state (session_meta carries the cwd). */
 export interface CodexFileState {
   agent: string;
+}
+
+const CODEX_CALL_TYPES = new Set(["function_call", "custom_tool_call", "local_shell_call"]);
+const CODEX_OUTPUT_TYPES = new Set([
+  "function_call_output",
+  "custom_tool_call_output",
+  "local_shell_call_output",
+]);
+
+/**
+ * Track how many tool calls in a Codex rollout still lack their output
+ * record. Calls and outputs are written independently (verified against
+ * real rollouts — distinct timestamps), so a call sitting without an
+ * output means the CLI is executing OR waiting for an approval prompt.
+ * Pure; exported for tests.
+ */
+export function updateCodexPendingCalls(pendingCalls: number, record: unknown): number {
+  const rec = record as CodexRecord;
+  if (!rec || typeof rec !== "object" || rec.type !== "response_item") return pendingCalls;
+  const t = rec.payload?.type;
+  if (typeof t !== "string") return pendingCalls;
+  if (CODEX_CALL_TYPES.has(t)) return pendingCalls + 1;
+  if (CODEX_OUTPUT_TYPES.has(t)) return Math.max(0, pendingCalls - 1);
+  return pendingCalls;
 }
 
 export function agentNameFromCwd(cwd: string | undefined, filePath: string): string {
@@ -114,23 +145,68 @@ export function mapCodexRecord(
 export interface CodexConnectorOptions {
   dir?: string;
   intervalMs?: number;
+  /** How long pending calls must sit unanswered before attention.requested (tests). */
+  attentionThresholdMs?: number;
   onEvent: (event: DioramaEvent) => void;
 }
 
 export function connectCodexSessions(options: CodexConnectorOptions): JsonlTailHandle {
   const dir = options.dir ?? codexSessionsDir();
+  const thresholdMs = options.attentionThresholdMs ?? ATTENTION_THRESHOLD_MS;
   const states = new Map<string, CodexFileState>();
+  const attention = new Map<string, AttentionState>();
+  const pendingCalls = new Map<string, number>();
+
   return tailJsonlDirectory({
     dir,
     intervalMs: options.intervalMs ?? 1500,
     onRecord: (record, filePath) => {
+      const now = Date.now();
       let state = states.get(filePath);
       if (!state) {
         state = { agent: agentNameFromCwd(undefined, filePath) };
         states.set(filePath, state);
       }
+
+      // Best-effort attention: a tool call record without its output record
+      // means the CLI is executing or sitting on an approval prompt.
+      let att = attention.get(filePath);
+      if (!att) {
+        att = createAttentionState(now);
+        attention.set(filePath, att);
+      }
+      const pending = updateCodexPendingCalls(pendingCalls.get(filePath) ?? 0, record);
+      pendingCalls.set(filePath, pending);
+      const blocking =
+        pending > 0
+          ? { label: "waiting for your approval", reason: `${pending} tool call(s) awaiting output` }
+          : null;
+      if (noteRecord(att, blocking, now) === "resolved") {
+        options.onEvent({
+          type: "attention.resolved",
+          room: "",
+          agent: state.agent,
+          payload: { source: "codex", label: "resumed" },
+          timestamp: now,
+        });
+      }
+
       const event = mapCodexRecord(record, state, filePath);
       if (event) options.onEvent(event);
+    },
+    onScan: () => {
+      const now = Date.now();
+      for (const [filePath, att] of attention) {
+        if (detectAttention(att, now, thresholdMs) === "pending" && att.pending) {
+          options.onEvent({
+            type: "attention.requested",
+            room: "",
+            agent: states.get(filePath)?.agent ?? agentNameFromCwd(undefined, filePath),
+            payload: { source: "codex", label: att.pending.label, reason: att.pending.reason },
+            timestamp: now,
+          });
+        }
+      }
     },
   });
 }

@@ -15,9 +15,22 @@ interface AgentFigure3DProps {
   energy?: number;
   /** Current activity for visual indicator above head. */
   activity?: AgentActivity;
+  /** Agent is blocked waiting for the user — shows the amber attention pill. */
+  attention?: boolean;
+  /** Label for the attention pill. */
+  attentionLabel?: string;
 }
 
-export function AgentFigure3D({ state, color, label, phase = 0, energy = 0.5, activity = "idle" }: AgentFigure3DProps) {
+export function AgentFigure3D({
+  state,
+  color,
+  label,
+  phase = 0,
+  energy = 0.5,
+  activity = "idle",
+  attention = false,
+  attentionLabel,
+}: AgentFigure3DProps) {
   const groupRef = useRef<Group>(null);
   const bodyRef = useRef<Group>(null);
 
@@ -46,7 +59,13 @@ export function AgentFigure3D({ state, color, label, phase = 0, energy = 0.5, ac
     <group ref={groupRef}>
       {/* Activity indicator + name label above head */}
       <group position={[0, 1.5 + yOffset, 0]}>
-        <ActivityIndicator3D activity={activity} agentLabel={label} color={color} />
+        <ActivityIndicator3D
+          activity={activity}
+          agentLabel={label}
+          color={color}
+          attention={attention}
+          attentionLabel={attentionLabel}
+        />
       </group>
       <group ref={bodyRef} position={[0, yOffset, 0]}>
         {/* Body - capsule shape */}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { DioramaConfig } from "@diorama/engine";
 import { TopBar } from "@/components/TopBar";
 import { Welcome } from "@/components/Welcome";
+import { useAttentionNotifications, type AttentionEntry } from "@/hooks/useAttentionNotifications";
 
 // Dynamic import to avoid SSR issues with Three.js
 const LiveView = dynamic(() => import("@/components/LiveView").then((m) => ({ default: m.LiveView })), {
@@ -32,6 +33,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<DioramaConfig | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+
+  // Agents currently blocked waiting for the user (reported by the views)
+  const [attention, setAttention] = useState<AttentionEntry[]>([]);
+  const { promptVisible, enableNotifications, dismissPrompt } = useAttentionNotifications(attention);
 
   useEffect(() => {
     fetch("/api/config")
@@ -116,22 +121,74 @@ export default function Home() {
           </div>
         }
         actions={
-          <button onClick={() => router.push("/wizard")} className="dio-btn dio-btn-ghost dio-btn-sm">
-            Redesign office
-          </button>
+          <>
+            {attention.length > 0 && (
+              <span
+                title={attention.map((a) => `${a.agent} — ${a.label}`).join("\n")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "3px 10px",
+                  borderRadius: 999,
+                  background: "color-mix(in oklab, var(--warn) 14%, transparent)",
+                  border: "1px solid color-mix(in oklab, var(--warn) 45%, transparent)",
+                  color: "var(--warn)",
+                  fontSize: 12,
+                  fontWeight: 550,
+                  cursor: "default",
+                }}
+              >
+                <span aria-hidden>✋</span>
+                {attention.length} need{attention.length === 1 ? "s" : ""} you
+              </span>
+            )}
+            <button onClick={() => router.push("/wizard")} className="dio-btn dio-btn-ghost dio-btn-sm">
+              Redesign office
+            </button>
+          </>
         }
       />
 
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
         <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
           {view === "dashboard" ? (
-            <DashboardView config={config} />
+            <DashboardView config={config} onAttentionChange={setAttention} />
           ) : (
             <LiveView
               config={config}
               selectedRoom={selectedRoom}
               onSelectRoom={setSelectedRoom}
+              onAttentionChange={setAttention}
             />
+          )}
+
+          {/* One-time inline offer to enable browser notifications — never
+              auto-prompts; appears only while an agent is waiting. */}
+          {promptVisible && (
+            <div
+              className="dio-card dio-fade-in"
+              style={{
+                position: "absolute",
+                top: 12,
+                right: 12,
+                zIndex: 10,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 8px 8px 12px",
+              }}
+            >
+              <span style={{ fontSize: 12, color: "var(--ink-2)" }}>
+                Get notified when an agent needs you
+              </span>
+              <button className="dio-btn dio-btn-primary dio-btn-sm" onClick={enableNotifications}>
+                Enable
+              </button>
+              <button className="dio-btn dio-btn-ghost dio-btn-sm" onClick={dismissPrompt} aria-label="Dismiss notifications offer">
+                ✕
+              </button>
+            </div>
           )}
         </div>
         {view === "3d-office" && (

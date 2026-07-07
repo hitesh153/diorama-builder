@@ -31,6 +31,7 @@ import {
   type FurnitureItem,
 } from "@diorama/engine";
 import { ActivityFeed, type FeedEntry } from "./ActivityFeed";
+import type { AttentionEntry } from "@/hooks/useAttentionNotifications";
 
 const THEME_COLORS: Record<string, { accent: string; floor: string }> = {
   "neon-dark": { accent: "#8090c0", floor: "#1a1a2e" },
@@ -76,9 +77,11 @@ interface LiveViewProps {
   config: DioramaConfig;
   onSelectRoom?: (roomLabel: string | null) => void;
   selectedRoom?: string | null;
+  /** Reports the set of agents currently blocked waiting for the user. */
+  onAttentionChange?: (entries: AttentionEntry[]) => void;
 }
 
-export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) {
+export function LiveView({ config, onSelectRoom, selectedRoom, onAttentionChange }: LiveViewProps) {
   const { eventBus, status, connect } = useGatewayEvents();
   const colors = THEME_COLORS[config.theme] ?? THEME_COLORS["neon-dark"];
 
@@ -101,7 +104,10 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
   useMockEventSource(eventBus, isDemoMode, config.rooms.map((r) => r.label));
   // Local connectors + pushed events arrive via the server's SSE stream.
   // "ingest" costs nothing to include; codex/claude-code start their tailers.
-  useIngestEvents(eventBus, localSources.length > 0, localSources);
+  // Always subscribed: pushed events (POST /api/ingest) must work on ANY
+  // world — including the demo — with zero configuration. Local
+  // connectors (codex/claude-code) still only start when configured.
+  useIngestEvents(eventBus, true, localSources);
 
   // Rooms centroid + bounding radius for camera framing
   const { roomsCenter, fitRadius } = useMemo<{
@@ -167,6 +173,20 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
   const agentActivitiesRef = useRef<Map<string, ActivityRecord>>(new Map());
   const [activitySnapshot, setActivitySnapshot] = useState<Map<string, ActivityRecord>>(new Map());
   const [feedEntries, setFeedEntries] = useState<FeedEntry[]>([]);
+
+  // Attention tracking — agents blocked waiting for the user.
+  // attention.requested sets it; attention.resolved OR any later normal
+  // event from the same agent clears it.
+  const attentionRef = useRef<Map<string, { since: number; label: string }>>(new Map());
+  const [attentionSnapshot, setAttentionSnapshot] = useState<Map<string, { since: number; label: string }>>(
+    new Map(),
+  );
+
+  useEffect(() => {
+    onAttentionChange?.(
+      Array.from(attentionSnapshot, ([agent, v]) => ({ agent, since: v.since, label: v.label })),
+    );
+  }, [attentionSnapshot, onAttentionChange]);
 
   // Placement helpers over the shared seat refs
   type Placement = { x: number; z: number; seatRotation: number | null; seatKey: string | null };
@@ -417,6 +437,17 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
       ? `${event.agent} ${customLabel}`
       : formatEventLabel(event.type, event.agent, event.room || (targetRoom?.label ?? ""), preset);
 
+    // Attention: requested sets it; anything else from the agent clears it.
+    if (event.type === "attention.requested") {
+      attentionRef.current.set(agentId, {
+        since: event.timestamp ?? Date.now(),
+        label: customLabel ?? "needs you",
+      });
+      setAttentionSnapshot(new Map(attentionRef.current));
+    } else if (attentionRef.current.delete(agentId)) {
+      setAttentionSnapshot(new Map(attentionRef.current));
+    }
+
     agentActivitiesRef.current.set(agentId, {
       activity,
       startedAt: Date.now(),
@@ -435,6 +466,7 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
         agentColor,
         timestamp: Date.now(),
         activity,
+        attention: event.type === "attention.requested",
       };
       const next = [...prev, entry];
       return next.length > 15 ? next.slice(-15) : next;
@@ -538,6 +570,8 @@ export function LiveView({ config, onSelectRoom, selectedRoom }: LiveViewProps) 
             phase={i * 3.7}
             energy={agent.energy}
             activity={activitySnapshot.get(agent.id)?.activity ?? "idle"}
+            attention={attentionSnapshot.has(agent.id)}
+            attentionLabel={attentionSnapshot.get(agent.id)?.label}
           />
         ))}
       </DioramaScene>

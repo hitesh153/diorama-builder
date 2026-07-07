@@ -3,6 +3,14 @@ import os from "os";
 import path from "path";
 import type { DioramaEvent } from "@diorama/engine";
 import { tailJsonlDirectory, type JsonlTailHandle } from "./jsonlTail";
+import {
+  ATTENTION_THRESHOLD_MS,
+  createAttentionState,
+  detectAttention,
+  noteRecord,
+  type AttentionCause,
+  type AttentionState,
+} from "./attention";
 
 /**
  * Claude Code connector — visualizes Claude Code sessions as Diorama
@@ -10,6 +18,12 @@ import { tailJsonlDirectory, type JsonlTailHandle } from "./jsonlTail";
  *
  * Each project becomes one agent ("claude/<project>"). Assistant records
  * map to message.sent / tool.call; other record types are ignored.
+ *
+ * Attention ("the agent needs you"): an assistant record whose content ends
+ * in a tool_use block is normally followed by the tool_result within
+ * seconds. When nothing follows for ATTENTION_THRESHOLD_MS, the session is
+ * blocked on the user — a permission prompt, AskUserQuestion, or plan
+ * approval — and we emit attention.requested / attention.resolved.
  */
 
 export function claudeProjectsDir(): string {
@@ -18,10 +32,38 @@ export function claudeProjectsDir(): string {
 
 interface ClaudeRecord {
   type?: string;
+  subtype?: string;
   timestamp?: string;
   isSidechain?: boolean;
   message?: {
     content?: Array<{ type?: string; name?: string; text?: string }> | string;
+  };
+}
+
+/** Tools that always hand control to the user (never plain latency). */
+const USER_FACING_TOOLS: Record<string, string> = {
+  AskUserQuestion: "waiting for your answer",
+  ExitPlanMode: "waiting for plan approval",
+};
+
+/**
+ * Is this record the blocked-on-user signature? An assistant record whose
+ * message content ENDS in a tool_use block — the paired tool_result record
+ * only appears after the tool runs, which for a permission prompt means
+ * after the user approves. Pure; exported for tests.
+ */
+export function claudeBlockingSignature(record: unknown): AttentionCause | null {
+  const rec = record as ClaudeRecord;
+  if (!rec || typeof rec !== "object" || rec.type !== "assistant") return null;
+  if (rec.isSidechain) return null;
+  const content = rec.message?.content;
+  if (!Array.isArray(content) || content.length === 0) return null;
+  const last = content[content.length - 1];
+  if (last?.type !== "tool_use") return null;
+  const tool = last.name ?? "a tool";
+  return {
+    label: USER_FACING_TOOLS[tool] ?? "waiting for your approval",
+    reason: `${tool} call pending`,
   };
 }
 
@@ -35,12 +77,26 @@ export function agentNameFromProjectPath(filePath: string): string {
 /** Map one Claude Code transcript record to a DioramaEvent, or null. Pure. */
 export function mapClaudeRecord(record: unknown, filePath: string): DioramaEvent | null {
   const rec = record as ClaudeRecord;
-  if (!rec || typeof rec !== "object" || rec.type !== "assistant") return null;
-  if (rec.isSidechain) return null; // subagent chatter — too noisy
+  if (!rec || typeof rec !== "object") return null;
 
   const ts = rec.timestamp ? Date.parse(rec.timestamp) : Date.now();
   const timestamp = Number.isFinite(ts) ? ts : Date.now();
   const agent = agentNameFromProjectPath(filePath);
+
+  // turn_duration is written when a turn ends — the session is idle,
+  // waiting for the user's next prompt.
+  if (rec.type === "system" && rec.subtype === "turn_duration") {
+    return {
+      type: "session.idle",
+      room: "",
+      agent,
+      payload: { source: "claude-code", label: "finished a turn" },
+      timestamp,
+    };
+  }
+
+  if (rec.type !== "assistant") return null;
+  if (rec.isSidechain) return null; // subagent chatter — too noisy
 
   const content = rec.message?.content;
   if (Array.isArray(content)) {
@@ -71,17 +127,56 @@ export function mapClaudeRecord(record: unknown, filePath: string): DioramaEvent
 export interface ClaudeCodeConnectorOptions {
   dir?: string;
   intervalMs?: number;
+  /** How long a blocking record must sit unanswered before attention.requested (tests). */
+  attentionThresholdMs?: number;
   onEvent: (event: DioramaEvent) => void;
 }
 
 export function connectClaudeCode(options: ClaudeCodeConnectorOptions): JsonlTailHandle {
   const dir = options.dir ?? claudeProjectsDir();
+  const thresholdMs = options.attentionThresholdMs ?? ATTENTION_THRESHOLD_MS;
+  const attention = new Map<string, AttentionState>();
+
   return tailJsonlDirectory({
     dir,
     intervalMs: options.intervalMs ?? 1500,
     onRecord: (record, filePath) => {
+      const now = Date.now();
+      let att = attention.get(filePath);
+      if (!att) {
+        att = createAttentionState(now);
+        attention.set(filePath, att);
+      }
+      // Any new record ends a previously-announced block on this file.
+      if (noteRecord(att, claudeBlockingSignature(record), now) === "resolved") {
+        options.onEvent({
+          type: "attention.resolved",
+          room: "",
+          agent: agentNameFromProjectPath(filePath),
+          payload: { source: "claude-code", label: "resumed" },
+          timestamp: now,
+        });
+      }
       const event = mapClaudeRecord(record, filePath);
       if (event) options.onEvent(event);
+    },
+    onScan: () => {
+      const now = Date.now();
+      for (const [filePath, att] of attention) {
+        if (detectAttention(att, now, thresholdMs) === "pending" && att.pending) {
+          options.onEvent({
+            type: "attention.requested",
+            room: "",
+            agent: agentNameFromProjectPath(filePath),
+            payload: {
+              source: "claude-code",
+              label: att.pending.label,
+              reason: att.pending.reason,
+            },
+            timestamp: now,
+          });
+        }
+      }
     },
   });
 }

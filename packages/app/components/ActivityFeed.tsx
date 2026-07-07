@@ -9,6 +9,8 @@ export interface FeedEntry {
   agentColor: string;
   timestamp: number;
   activity: AgentActivity;
+  /** Attention event — the agent is waiting on the user (amber dot). */
+  attention?: boolean;
 }
 
 interface ActivityFeedProps {
@@ -95,16 +97,16 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
               lineHeight: 1.4,
             }}
           >
-            {/* Agent color dot */}
+            {/* Agent color dot — amber for attention events */}
             <div
               style={{
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                background: entry.agentColor,
+                background: entry.attention ? "var(--warn)" : entry.agentColor,
                 marginTop: 4,
                 flexShrink: 0,
-                boxShadow: `0 0 4px ${entry.agentColor}40`,
+                boxShadow: entry.attention ? "none" : `0 0 4px ${entry.agentColor}40`,
               }}
             />
             {/* Label */}

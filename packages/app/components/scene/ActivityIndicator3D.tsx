@@ -22,12 +22,18 @@ interface ActivityIndicator3DProps {
   activity: AgentActivity;
   agentLabel: string;
   color: string;
+  /** The agent is blocked waiting for the user (permission prompt, question). */
+  attention?: boolean;
+  /** Short reason shown in the attention pill, e.g. "waiting for your approval". */
+  attentionLabel?: string;
 }
 
 export function ActivityIndicator3D({
   activity,
   agentLabel,
   color,
+  attention = false,
+  attentionLabel,
 }: ActivityIndicator3DProps) {
   const [dots, setDots] = useState(".");
 
@@ -56,6 +62,31 @@ export function ActivityIndicator3D({
           userSelect: "none",
         }}
       >
+        {/* Attention pill — the agent is blocked on the user. Sits ABOVE the
+            normal activity icon; slow opacity pulse (dio-pulse keyframes from
+            globals.css), unmissable but not strobing. */}
+        {attention && (
+          <div
+            style={{
+              background: "rgba(13,21,32,0.92)",
+              border: "1px solid var(--warn)",
+              color: "var(--warn)",
+              borderRadius: 999,
+              padding: "3px 10px",
+              fontSize: 12,
+              fontWeight: 600,
+              lineHeight: 1.2,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              animation: "dio-pulse 1.2s ease-in-out infinite",
+            }}
+          >
+            <span aria-hidden>✋</span>
+            <span>{attentionLabel ?? "needs you"}</span>
+          </div>
+        )}
+
         {/* Activity indicator */}
         {isActive && (
           <div
@@ -93,7 +124,7 @@ export function ActivityIndicator3D({
         {/* Agent name label */}
         <div
           style={{
-            color: isActive ? color : "rgba(128,144,192,0.5)",
+            color: attention ? "var(--warn)" : isActive ? color : "rgba(128,144,192,0.5)",
             fontFamily: "'SF Mono', 'Fira Code', monospace",
             fontSize: 10,
             fontWeight: 600,

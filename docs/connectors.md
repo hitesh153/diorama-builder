@@ -62,6 +62,11 @@ await fetch("http://localhost:3456/api/ingest", {
 - `room` → the agent walks there (door-to-door pathfinding), the room glows
 - `type` + room preset → an activity icon above the agent's head
   (`test.*` → 🔬, `message.*`/`*.sent` → 📡, `review.*` → 🔍, …)
+- `attention.requested` → the agent shows a pulsing amber "✋ needs you"
+  badge (and can fire a browser notification) until `attention.resolved`
+  — or any later event from the same agent — clears it; the built-in
+  Codex/Claude Code connectors emit these automatically when a session is
+  blocked on a permission prompt or question
 - everything lands in the activity feed and the dashboard
 
 ## Writing a connector

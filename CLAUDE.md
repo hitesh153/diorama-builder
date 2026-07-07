@@ -113,6 +113,18 @@ npx next build        # app build (from packages/app)
 
 ## Changelog
 
+### 2026-07-07 — "Agent needs you" + market strategy
+
+The retention wedge: Diorama now surfaces when an agent is BLOCKED waiting for the user, with in-world visuals and browser notifications. Plus the market analysis that reshaped strategy (docs/strategy/market-analysis.md — read before launch decisions).
+
+- **Detection** (`plugins/sources/attention.ts` + connectors) — Claude Code: an assistant record ending in a tool_use block with no follow-up ≥20s = blocked on the user (empirically verified: AskUserQuestion sat 2083s, permission prompts 84s+, normal tool latency ≤9s; special labels for AskUserQuestion/ExitPlanMode). Codex: best-effort pending-call counter (call record without output record). Emits `attention.requested`/`attention.resolved`; any later event from the agent also clears. `jsonlTail` gained an `onScan` callback for time-based checks on the poll cadence. `session.idle` derived from Claude's `system/turn_duration` records.
+- **Visuals** — pulsing amber ✋ pill above the agent (ActivityIndicator3D), amber name tint, TopBar "✋ N need you" pill (tooltip lists agents), dashboard tiles get warn border + "waiting for you · Xs", amber feed dots.
+- **Notifications** (`hooks/useAttentionNotifications.ts`) — never auto-prompts: inline "Enable" chip appears only while an agent is waiting; localStorage opt-out; Notification tag=agent (no stacking), closed on resolve, fires only when the tab is hidden/unfocused.
+- **Ingest always on** — LiveView/Dashboard now always subscribe to the SSE stream (pushed events work on ANY world including the demo, zero config — the curl quick-start must never silently no-op). Local connectors still start only when configured.
+- Known gaps: attention state rebuilds per view (switching Office↔Dashboard mid-block drops the badge until the next episode); sessions already blocked before the tailer starts aren't seen (live-only tailing); Codex live-blocked case inferred, not observed.
+- **Strategy** (docs/strategy/market-analysis.md, 41 sources): Pixel Agents (8.5k stars, 2D) proves the category and takes the 2D slot; Claude Code's native Agent View absorbs part of the wedge; Vibe Kanban died at 27k stars (visualization ≠ business). Verdict: lead toy-that's-secretly-useful, cross-vendor 3D differentiation, X-first video launch, treat as growth asset until day-7 retention proves otherwise.
+- Tests: 553 passing (14 attention tests added). Browser-verified: badge + chip + feed on attention.requested, cleared on resolve.
+
 ### 2026-07-07 — App harmony: Welcome home, shared TopBar, one navigation
 
 User feedback: "why do I have to go to /wizard — explain the product first". The app now has one coherent shell.
