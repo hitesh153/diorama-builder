@@ -54,6 +54,8 @@ const QUICK_PROMPTS = [
 ];
 
 const MODEL_PLACEHOLDERS: Record<CopilotProviderConfig["provider"], string> = {
+  "claude-cli": "(your CLI default — or e.g. sonnet)",
+  "codex-cli": "(your CLI default)",
   anthropic: "claude-sonnet-5",
   "openai-compatible": "gpt-5",
   ollama: "llama3.1",
@@ -81,10 +83,15 @@ export function CopilotPanel({
   const worldRef = useRef({ state, theme, agents });
   worldRef.current = { state, theme, agents };
 
+  const [clis, setClis] = useState<{ claude: boolean; codex: boolean }>({ claude: false, codex: false });
+
   useEffect(() => {
     fetch("/api/copilot/config")
       .then((r) => r.json())
-      .then((s: { configured: boolean }) => setConfigured(s.configured))
+      .then((s: { configured: boolean; clis?: { claude: boolean; codex: boolean } }) => {
+        setConfigured(s.configured);
+        if (s.clis) setClis(s.clis);
+      })
       .catch(() => setConfigured(false));
   }, []);
 
@@ -189,6 +196,7 @@ export function CopilotPanel({
   if (!configured || showSettings) {
     return (
       <SettingsCard
+        clis={clis}
         onDone={() => {
           setConfigured(true);
           setShowSettings(false);
@@ -391,15 +399,19 @@ function ThinkingDots() {
 
 const PROVIDERS = Object.keys(PROVIDER_LABELS) as Array<CopilotProviderConfig["provider"]>;
 
-function SettingsCard({ onDone }: { onDone: () => void }) {
-  const [provider, setProvider] = useState<CopilotProviderConfig["provider"]>("anthropic");
+function SettingsCard({ clis, onDone }: { clis: { claude: boolean; codex: boolean }; onDone: () => void }) {
+  // Default to a detected local CLI — zero-setup path
+  const [provider, setProvider] = useState<CopilotProviderConfig["provider"]>(
+    clis.claude ? "claude-cli" : clis.codex ? "codex-cli" : "anthropic",
+  );
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [testResult, setTestResult] = useState<null | { ok: boolean; error?: string }>(null);
 
-  const needsKey = provider !== "ollama" && provider !== "codex-auth";
+  const isCli = provider === "claude-cli" || provider === "codex-cli";
+  const needsKey = !isCli && provider !== "ollama";
   const needsBaseUrl = provider === "openai-compatible" || provider === "ollama";
 
   const label: React.CSSProperties = {
@@ -473,11 +485,15 @@ function SettingsCard({ onDone }: { onDone: () => void }) {
         }}
         style={{ ...inputStyle, cursor: "pointer" }}
       >
-        {PROVIDERS.map((p) => (
-          <option key={p} value={p}>
-            {PROVIDER_LABELS[p]}
-          </option>
-        ))}
+        {PROVIDERS.map((p) => {
+          const detected =
+            (p === "claude-cli" && clis.claude) || (p === "codex-cli" && clis.codex);
+          return (
+            <option key={p} value={p}>
+              {detected ? "✓ " : ""}{PROVIDER_LABELS[p]}
+            </option>
+          );
+        })}
       </select>
 
       {needsKey && (
@@ -492,9 +508,17 @@ function SettingsCard({ onDone }: { onDone: () => void }) {
           />
         </>
       )}
+      {isCli && (
+        <p style={{ fontSize: 11, color: "#7a8", margin: "8px 0 0", lineHeight: 1.5 }}>
+          {provider === "claude-cli"
+            ? "Runs your local `claude` CLI — uses the login and plan you already have. No key needed."
+            : "Runs your local `codex` CLI — uses your ChatGPT login. No key needed."}
+          {" "}Replies take a bit longer than a direct API.
+        </p>
+      )}
       {provider === "codex-auth" && (
         <p style={{ fontSize: 11, color: "#667", margin: "8px 0 0", lineHeight: 1.5 }}>
-          Uses your Codex CLI login (~/.codex/auth.json). Run <code style={{ fontFamily: MONO }}>codex login</code> first.
+          Advanced: raw token from ~/.codex/auth.json against a custom OpenAI-compatible base URL.
         </p>
       )}
 

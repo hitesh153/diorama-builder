@@ -3,7 +3,7 @@ import {
   loadCredentials,
   resolveProviderConfig,
 } from "@diorama/plugins/copilot/credentials";
-import { createCopilotProvider } from "@diorama/plugins/copilot/providers";
+import { createProvider } from "@diorama/plugins/copilot/factory";
 
 export async function POST() {
   const creds = loadCredentials();
@@ -11,7 +11,7 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: "not_configured" });
   }
   try {
-    const provider = createCopilotProvider(resolveProviderConfig(creds));
+    const provider = createProvider(resolveProviderConfig(creds));
     await provider.chat({
       system: "Reply with OK",
       messages: [{ role: "user", text: "ping" }],

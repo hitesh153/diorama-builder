@@ -113,6 +113,15 @@ npx next build        # app build (from packages/app)
 
 ## Changelog
 
+### 2026-07-07 — Local-CLI copilot providers (no API key)
+
+"Use the coding agent you already have": the copilot can now run on the user's local `claude` (Claude Code) or `codex` CLI — spawned non-interactively, using their existing login/plan. Verified end-to-end: with provider=claude-cli, "Add a meeting room and a lab next to it" built both rooms in ~30s through the user's real Claude subscription. Zero keys.
+
+- **`copilot/cliProviders.ts`** — claude-cli (`claude -p <prompt> --output-format json`, parses `.result`) and codex-cli (`codex exec --skip-git-repo-check -s read-only -o <tmpfile>`). CLIs have no tool-call API, so tools ride the prompt: strict JSON envelope `{"text","toolCalls":[...]}`, parsed by a balanced-brace extractor tolerant of fences/prose (plain text → text-only reply). `resolveBinary` searches PATH + ~/.local/bin + /opt/homebrew/bin (GUI-spawned servers have thin PATHs). cfg.baseUrl doubles as a binary-path override.
+- **`copilot/factory.ts`** — server-only provider factory (routes use this); `providers.ts` stays browser-safe (labels/types only) and throws if asked to build a CLI provider.
+- Settings card: CLI providers listed first with ✓ detection ticks (`GET /api/copilot/config` now returns `clis`), no key field, defaults to a detected CLI. codex-auth relegated to "advanced".
+- Tests: 539 passing (8 CLI-provider tests added).
+
 ### 2026-07-06 — M5 Ship
 
 Productization pass — v3 plan (docs/specs/diorama-v3-world-builder.md) fully executed, M0→M5.

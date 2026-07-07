@@ -6,9 +6,10 @@ import {
   credentialsStatus,
 } from "@diorama/plugins/copilot/credentials";
 import type { CopilotProviderConfig } from "@diorama/plugins/copilot/providers";
+import { detectCliProviders } from "@diorama/plugins/copilot/cliProviders";
 
 export async function GET() {
-  return NextResponse.json(credentialsStatus());
+  return NextResponse.json({ ...credentialsStatus(), clis: detectCliProviders() });
 }
 
 export async function POST(request: Request) {

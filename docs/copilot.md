@@ -15,10 +15,16 @@ Configured in the panel's settings card (⚙). Keys are stored in
 
 | Provider | What you need | Default model |
 |---|---|---|
-| **Anthropic (Claude)** | an API key (`sk-ant-…`) | `claude-sonnet-5` |
+| **Claude Code CLI** ⭐ | the `claude` CLI you already log into — **no key** | your CLI default |
+| **Codex CLI** ⭐ | the `codex` CLI (ChatGPT login) — **no key** | your CLI default |
+| **Anthropic API key** | an API key (`sk-ant-…`) | `claude-sonnet-5` |
 | **OpenAI-compatible** | key + optional base URL — works with OpenAI, OpenRouter, Groq, LM Studio, vLLM… | `gpt-5` |
 | **Ollama (local)** | a running `ollama serve` — no key | `llama3.1` |
-| **Codex CLI login** | `codex login` (ChatGPT subscription) — token read from `~/.codex/auth.json` per call | `gpt-5` |
+
+⭐ The CLI providers are detected automatically (✓ in the dropdown) and are
+the zero-setup path: Diorama spawns your local binary in non-interactive
+mode (`claude -p` / `codex exec`), so auth and billing are whatever your
+existing login has. Replies take a little longer than a direct API call.
 
 "Save & test" makes a one-token ping to verify the connection.
 

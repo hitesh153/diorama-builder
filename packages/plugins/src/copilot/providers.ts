@@ -43,7 +43,7 @@ export interface ChatResponse {
 }
 
 export interface CopilotProviderConfig {
-  provider: "anthropic" | "openai-compatible" | "ollama" | "codex-auth";
+  provider: "anthropic" | "openai-compatible" | "ollama" | "codex-auth" | "claude-cli" | "codex-cli";
   apiKey?: string;
   baseUrl?: string;
   model?: string;
@@ -234,10 +234,12 @@ export function createOpenAICompatProvider(
 // ---------------------------------------------------------------------------
 
 export const PROVIDER_LABELS: Record<CopilotProviderConfig["provider"], string> = {
-  anthropic: "Anthropic (Claude)",
-  "openai-compatible": "OpenAI-compatible (OpenAI, OpenRouter, Groq…)",
+  "claude-cli": "Claude Code CLI (your existing login — no key)",
+  "codex-cli": "Codex CLI (your ChatGPT login — no key)",
+  anthropic: "Anthropic API key",
+  "openai-compatible": "OpenAI-compatible API (OpenAI, OpenRouter, Groq…)",
   ollama: "Ollama (local)",
-  "codex-auth": "Codex CLI login (ChatGPT subscription)",
+  "codex-auth": "Codex token (advanced — custom endpoint)",
 };
 
 /**
@@ -258,6 +260,11 @@ export function createCopilotProvider(cfg: CopilotProviderConfig): CopilotProvid
       );
     case "codex-auth":
       return createOpenAICompatProvider(cfg, "codex-auth");
+    case "claude-cli":
+    case "codex-cli":
+      throw new ProviderError(
+        `${cfg.provider} is a local-CLI provider — use createProvider from copilot/factory (server-side)`,
+      );
     default:
       throw new ProviderError(`Unknown provider "${(cfg as { provider: string }).provider}"`);
   }

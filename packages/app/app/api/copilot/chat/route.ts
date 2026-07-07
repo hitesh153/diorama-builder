@@ -3,7 +3,8 @@ import {
   loadCredentials,
   resolveProviderConfig,
 } from "@diorama/plugins/copilot/credentials";
-import { createCopilotProvider, type ChatTurn } from "@diorama/plugins/copilot/providers";
+import type { ChatTurn } from "@diorama/plugins/copilot/providers";
+import { createProvider } from "@diorama/plugins/copilot/factory";
 import { COPILOT_TOOLS } from "@diorama/ui/src/copilotTools";
 
 export async function POST(request: Request) {
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const provider = createCopilotProvider(resolveProviderConfig(creds));
+    const provider = createProvider(resolveProviderConfig(creds));
     const res = await provider.chat({
       system: body.system,
       messages: body.messages,
