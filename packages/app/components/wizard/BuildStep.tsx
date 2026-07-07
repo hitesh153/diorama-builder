@@ -305,13 +305,12 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
             top: 12,
             left: "50%",
             transform: "translateX(-50%)",
-            background: "rgba(8,14,24,0.94)",
-            border: "1px solid #1e2d42",
-            borderRadius: 6,
-            padding: "6px 12px",
-            fontSize: 11,
-            color: "#8bacd4",
-            fontFamily: "'SF Mono', 'Fira Code', monospace",
+            background: "var(--surface-2)",
+            border: "1px solid var(--border)",
+            borderRadius: 999,
+            padding: "6px 14px",
+            fontSize: 12,
+            color: "var(--ink-2)",
             pointerEvents: "none",
             whiteSpace: "nowrap",
           }}>
@@ -325,7 +324,7 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
             left: "50%",
             transform: "translate(-50%, -50%)",
             textAlign: "center",
-            color: "#666",
+            color: "var(--ink-3)",
             pointerEvents: "none",
           }}>
             <p style={{ fontSize: 16, marginBottom: 8 }}>Your office is empty</p>
@@ -336,31 +335,23 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
 
       {/* Right: Sidebar */}
       <div style={{
-        width: 320,
-        background: "#0d1520",
-        borderLeft: "1px solid #1a2535",
+        width: 300,
+        background: "var(--surface)",
+        borderLeft: "1px solid var(--border)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
         minHeight: 0,
       }}>
         {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #1a2535" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid var(--border)" }}>
           {(["rooms", "agents", "theme", "furniture", "assistant"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setSidebarTab(tab)}
-              style={{
-                flex: 1,
-                padding: "12px 0",
-                background: sidebarTab === tab ? "#1a2535" : "transparent",
-                border: "none",
-                color: sidebarTab === tab ? "#e0e0e0" : "#666",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                textTransform: "capitalize",
-              }}
+              className="dio-tab"
+              data-active={sidebarTab === tab}
+              style={{ flex: 1, textTransform: "capitalize" }}
             >
               {tab === "assistant" ? "✦ AI" : tab}
             </button>
@@ -403,10 +394,10 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
             <div>
               <PresetPalette onAdd={startPlacingRoom} onAddImmediate={addRoom} onAddCustom={addCustomRoom} />
               {selectedRoom && (
-                <div style={{ marginTop: 24, borderTop: "1px solid #1a2535", paddingTop: 16 }}>
-                  <h4 style={{ margin: "0 0 12px", fontSize: 13, color: "#999" }}>Selected Room</h4>
+                <div style={{ marginTop: 24, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+                  <h4 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>Selected room</h4>
                   <p style={{ fontSize: 14, marginBottom: 8 }}>{selectedRoom.label}</p>
-                  <p style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>
+                  <p className="dio-mono" style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 12 }}>
                     {selectedRoom.size[0].toFixed(1)}m × {selectedRoom.size[1].toFixed(1)}m
                     {" · "}{(selectedRoom.size[0] * selectedRoom.size[1]).toFixed(1)} m²
                     {" · "}({selectedRoom.position[0]}, {selectedRoom.position[1]})
@@ -440,16 +431,8 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
 
                   <button
                     onClick={() => removeRoom(selectedRoom.id)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 0",
-                      background: "transparent",
-                      color: "#ff6b6b",
-                      border: "1px solid #ff6b6b33",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      cursor: "pointer",
-                    }}
+                    className="dio-btn dio-btn-danger"
+                    style={{ width: "100%" }}
                   >
                     Remove Room
                   </button>
@@ -493,7 +476,7 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
                 }}
               />
             ) : (
-              <div style={{ color: "#666", fontSize: 13 }}>
+              <div style={{ color: "var(--ink-3)", fontSize: 13 }}>
                 <p>Select a room first to add furniture.</p>
                 <p style={{ fontSize: 12, marginTop: 8 }}>
                   Click on a room in the 3D viewport, then choose items from the catalog.
@@ -505,45 +488,24 @@ export function BuildStep({ agents, theme, onThemeChange, onComplete, onBack }: 
 
         {/* Floor area summary */}
         {rooms.length > 0 && (
-          <div style={{ padding: "8px 16px", borderTop: "1px solid #1a2535", display: "flex", justifyContent: "space-between", fontSize: 11, color: "#556" }}>
+          <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--ink-3)" }}>
             <span>{rooms.length} room{rooms.length !== 1 ? "s" : ""}</span>
-            <span style={{ color: "#8090c0" }}>
+            <span className="dio-mono" style={{ color: "var(--accent)" }}>
               {rooms.reduce((s, r) => s + r.size[0] * r.size[1], 0).toFixed(0)} m² total
             </span>
           </div>
         )}
 
         {/* Bottom actions */}
-        <div style={{ padding: 16, borderTop: "1px solid #1a2535", display: "flex", gap: 8 }}>
-          <button
-            onClick={onBack}
-            style={{
-              flex: 1,
-              padding: "10px 0",
-              background: "transparent",
-              color: "#888",
-              border: "1px solid #333",
-              borderRadius: 6,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
+        <div style={{ padding: 16, borderTop: "1px solid var(--border)", display: "flex", gap: 8 }}>
+          <button onClick={onBack} className="dio-btn dio-btn-ghost" style={{ flex: 1 }}>
             Back
           </button>
           <button
             onClick={handleComplete}
             disabled={rooms.length === 0}
-            style={{
-              flex: 2,
-              padding: "10px 0",
-              background: rooms.length > 0 ? "#8090c0" : "#333",
-              color: rooms.length > 0 ? "#fff" : "#666",
-              border: "none",
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: rooms.length > 0 ? "pointer" : "default",
-            }}
+            className="dio-btn dio-btn-primary"
+            style={{ flex: 2 }}
           >
             Continue to Launch
           </button>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-const MONO = "'SF Mono', 'Fira Code', monospace";
 const STORAGE_KEY = "diorama.tour.v1";
 
 interface TourStep {
@@ -62,44 +61,30 @@ export function OnboardingTour() {
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 50, pointerEvents: "none" }}>
       <div
+        className="dio-card"
         style={{
           position: "absolute",
           ...current.position,
           width: 300,
-          background: "#131c2e",
-          border: "1px solid #2a3a5f",
-          borderRadius: 12,
           padding: 16,
           pointerEvents: "auto",
-          boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+          boxShadow: "0 8px 32px rgb(0 0 0 / 0.45)",
         }}
       >
-        <p style={{ margin: "0 0 4px", fontSize: 10, color: "#667", fontFamily: MONO }}>
+        <p className="dio-mono" style={{ margin: "0 0 4px", fontSize: 10, color: "var(--ink-3)" }}>
           {step + 1} / {STEPS.length}
         </p>
-        <h4 style={{ margin: "0 0 6px", fontSize: 14, color: "#e0e0e0" }}>{current.title}</h4>
-        <p style={{ margin: "0 0 12px", fontSize: 12.5, color: "#9aa8c5", lineHeight: 1.5 }}>
+        <h4 style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 650, color: "var(--ink)" }}>{current.title}</h4>
+        <p style={{ margin: "0 0 12px", fontSize: 12.5, color: "var(--ink-2)", lineHeight: 1.5 }}>
           {current.body}
         </p>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button
-            onClick={done}
-            style={{ background: "transparent", border: "none", color: "#556", fontSize: 11.5, cursor: "pointer", padding: 0, fontFamily: MONO }}
-          >
+          <button onClick={done} className="dio-btn dio-btn-ghost dio-btn-sm">
             Skip
           </button>
           <button
             onClick={() => (step < STEPS.length - 1 ? setStep(step + 1) : done())}
-            style={{
-              background: "#8090c0",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              padding: "6px 16px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
+            className="dio-btn dio-btn-primary dio-btn-sm"
           >
             {step < STEPS.length - 1 ? "Next" : "Start building"}
           </button>

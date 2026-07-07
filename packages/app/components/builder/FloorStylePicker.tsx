@@ -23,15 +23,15 @@ export function FloorStylePicker({ value, presetDefault, onChange }: FloorStyleP
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h5 style={{ margin: 0, fontSize: 12, color: "#999" }}>Floor Style</h5>
+        <h5 style={{ margin: 0, fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>Floor style</h5>
         {hasOverride && (
           <button
             onClick={() => onChange(undefined)}
             style={{
               background: "transparent",
               border: "none",
-              color: "#8090c0",
-              fontSize: 10,
+              color: "var(--accent)",
+              fontSize: 11,
               cursor: "pointer",
               padding: 0,
             }}
@@ -44,12 +44,13 @@ export function FloorStylePicker({ value, presetDefault, onChange }: FloorStyleP
       <div style={{ display: "flex", gap: 4 }}>
         {FLOOR_STYLES.map((style) => {
           const isActive = style === active;
-          const isOverride = style === value;
           return (
             <button
               key={style}
               title={FLOOR_STYLE_LABELS[style]}
               onClick={() => onChange(style === presetDefault ? undefined : style)}
+              className="dio-card dio-card-interactive"
+              data-selected={isActive}
               style={{
                 flex: 1,
                 display: "flex",
@@ -57,14 +58,9 @@ export function FloorStylePicker({ value, presetDefault, onChange }: FloorStyleP
                 alignItems: "center",
                 gap: 3,
                 padding: "6px 2px",
-                background: isActive ? "#1a3520" : "#1a2535",
-                border: isActive
-                  ? `1px solid ${isOverride ? "#8090c0" : "#48bb78"}`
-                  : "1px solid #2a3545",
                 borderRadius: 6,
-                color: isActive ? "#e0e0e0" : "#666",
+                color: isActive ? "var(--ink)" : "var(--ink-3)",
                 fontSize: 14,
-                cursor: "pointer",
               }}
             >
               <span>{STYLE_ICONS[style]}</span>
@@ -75,7 +71,7 @@ export function FloorStylePicker({ value, presetDefault, onChange }: FloorStyleP
       </div>
 
       {!hasOverride && (
-        <p style={{ margin: 0, fontSize: 10, color: "#555" }}>
+        <p style={{ margin: 0, fontSize: 11, color: "var(--ink-3)" }}>
           Using preset default ({FLOOR_STYLE_LABELS[presetDefault]})
         </p>
       )}

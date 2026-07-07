@@ -55,7 +55,7 @@ export function FurnitureCatalogPanel({
 
   return (
     <div>
-      <h4 style={{ margin: "0 0 4px", fontSize: 13, color: "#999" }}>
+      <h4 style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>
         Furniture for {selectedRoomLabel}
       </h4>
 
@@ -63,11 +63,11 @@ export function FurnitureCatalogPanel({
         <div style={{
           padding: "8px 10px",
           marginBottom: 10,
-          background: "#1a3520",
-          border: "1px solid #2a5535",
+          background: "var(--ok-soft)",
+          border: "1px solid var(--ok-soft)",
           borderRadius: 6,
           fontSize: 12,
-          color: "#48bb78",
+          color: "var(--ok)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -78,7 +78,7 @@ export function FurnitureCatalogPanel({
             style={{
               background: "transparent",
               border: "none",
-              color: "#ff6b6b",
+              color: "var(--err)",
               fontSize: 11,
               cursor: "pointer",
             }}
@@ -91,7 +91,7 @@ export function FurnitureCatalogPanel({
       {/* Existing furniture in the room */}
       {existingFurniture.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <h5 style={{ margin: "0 0 6px", fontSize: 11, color: "#666" }}>
+          <h5 style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-3)" }}>
             In this room ({existingFurniture.length})
           </h5>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -103,10 +103,10 @@ export function FurnitureCatalogPanel({
                   justifyContent: "space-between",
                   alignItems: "center",
                   padding: "4px 8px",
-                  background: "#111d2e",
+                  background: "var(--surface-2)",
                   borderRadius: 4,
                   fontSize: 11,
-                  color: "#999",
+                  color: "var(--ink-2)",
                 }}
               >
                 <span>{f.label ?? f.geometry} ({f.size[0].toFixed(1)}x{f.size[2].toFixed(1)})</span>
@@ -115,7 +115,7 @@ export function FurnitureCatalogPanel({
                   style={{
                     background: "transparent",
                     border: "none",
-                    color: "#ff6b6b",
+                    color: "var(--err)",
                     fontSize: 11,
                     cursor: "pointer",
                     padding: "2px 6px",
@@ -141,17 +141,16 @@ export function FurnitureCatalogPanel({
                 alignItems: "center",
                 gap: 6,
                 padding: "6px 8px",
-                background: "#111d2e",
+                background: "var(--surface-2)",
                 border: "none",
                 borderRadius: 4,
-                color: "#8090c0",
+                color: "var(--ink-2)",
                 fontSize: 11,
-                fontWeight: 600,
-                cursor: "pointer",
+                fontWeight: 550,
                 textAlign: "left",
               }}
             >
-              <span style={{ fontSize: 9, color: "#666" }}>
+              <span style={{ fontSize: 9, color: "var(--ink-3)" }}>
                 {expandedCategories.has(cat) ? "▼" : "▶"}
               </span>
               {CATEGORY_LABELS[cat]} ({catalog[cat].length})
@@ -168,17 +167,16 @@ export function FurnitureCatalogPanel({
                   <button
                     key={item.id}
                     onClick={() => onSelectItem(item)}
+                    className="dio-card dio-card-interactive"
+                    data-selected={placingItemId === item.id}
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
                       padding: "6px 8px",
-                      background: placingItemId === item.id ? "#1a3520" : "#1a2535",
-                      border: placingItemId === item.id ? "1px solid #48bb78" : "1px solid #2a3545",
                       borderRadius: 6,
-                      color: "#e0e0e0",
+                      color: "var(--ink)",
                       fontSize: 11,
-                      cursor: "pointer",
                       textAlign: "left",
                     }}
                   >
@@ -187,7 +185,7 @@ export function FurnitureCatalogPanel({
                       height: 16,
                       borderRadius: 3,
                       background: item.defaultMaterial.color,
-                      border: "1px solid #333",
+                      border: "1px solid var(--border)",
                       flexShrink: 0,
                     }} />
                     {item.label}

@@ -22,6 +22,31 @@ function defaultBehavior(): AgentBehavior {
   return { seat: "", allowedRooms: [], energy: 0.5 };
 }
 
+function Checkbox({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 14,
+        height: 14,
+        borderRadius: 4,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 10,
+        fontWeight: 650,
+        background: on ? "var(--accent)" : "transparent",
+        border: on ? "1px solid transparent" : "1px solid var(--border-strong)",
+        color: "var(--accent-ink)",
+        transition: "background var(--t-fast) var(--ease)",
+      }}
+    >
+      {on ? "✓" : ""}
+    </span>
+  );
+}
+
 export function AgentBehaviorStep({
   agents,
   rooms,
@@ -59,13 +84,15 @@ export function AgentBehaviorStep({
   };
 
   return (
-    <div style={{ maxWidth: 700, width: "100%", margin: "0 auto", padding: "0 24px" }}>
-      <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Configure Agents</h2>
-      <p style={{ fontSize: 13, color: "#888", marginBottom: 24 }}>
-        Set each agent's seat, room access, and energy level.
+    <div style={{ maxWidth: 560, width: "100%", margin: "0 auto" }}>
+      <h1 style={{ fontSize: 20, fontWeight: 650, margin: "0 0 6px", letterSpacing: "-0.01em" }}>
+        Configure agents
+      </h1>
+      <p style={{ fontSize: 13, color: "var(--ink-2)", margin: "0 0 24px" }}>
+        Set each agent&apos;s seat, room access, and energy level.
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32, maxHeight: "calc(100vh - 280px)", overflowY: "auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24, maxHeight: "calc(100vh - 280px)", overflowY: "auto" }}>
         {agents.map((agent) => (
           <AgentCard
             key={agent}
@@ -79,42 +106,17 @@ export function AgentBehaviorStep({
         ))}
 
         {agents.length === 0 && (
-          <div style={{ padding: 32, textAlign: "center", color: "#666", fontSize: 14 }}>
+          <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>
             No agents discovered. Go back and connect to a gateway or use demo mode.
           </div>
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 12 }}>
-        <button
-          onClick={onBack}
-          style={{
-            flex: 1,
-            padding: "12px 0",
-            background: "transparent",
-            color: "#888",
-            border: "1px solid #333",
-            borderRadius: 8,
-            fontSize: 14,
-            cursor: "pointer",
-          }}
-        >
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <button onClick={onBack} className="dio-btn dio-btn-ghost">
           Back
         </button>
-        <button
-          onClick={() => onComplete(behaviors)}
-          style={{
-            flex: 2,
-            padding: "12px 0",
-            background: "#8090c0",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={() => onComplete(behaviors)} className="dio-btn dio-btn-primary">
           Continue
         </button>
       </div>
@@ -135,36 +137,22 @@ interface AgentCardProps {
 
 function AgentCard({ agent, behavior, seatOptions, roomLabels, onUpdate, onToggleRoom }: AgentCardProps) {
   return (
-    <div
-      style={{
-        background: "#1a2535",
-        borderRadius: 8,
-        padding: 20,
-        border: "1px solid #2a3a50",
-      }}
-    >
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#e0e0e0" }}>
-        {agent}
+    <div className="dio-card" style={{ padding: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <span
+          aria-hidden
+          style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }}
+        />
+        <span style={{ fontSize: 13, fontWeight: 650, color: "var(--ink)" }}>{agent}</span>
       </div>
 
       {/* Seat Assignment */}
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 12, color: "#999", display: "block", marginBottom: 4 }}>
-          Seat Assignment
-        </label>
+        <label className="dio-label">Seat assignment</label>
         <select
           value={behavior.seat}
           onChange={(e) => onUpdate({ seat: e.target.value })}
-          style={{
-            width: "100%",
-            padding: "8px 10px",
-            background: "#0d1520",
-            color: "#e0e0e0",
-            border: "1px solid #2a3a50",
-            borderRadius: 6,
-            fontSize: 13,
-            fontFamily: "'SF Mono', 'Fira Code', monospace",
-          }}
+          className="dio-select dio-mono"
         >
           <option value="">No assigned seat</option>
           {seatOptions.map((opt) => (
@@ -177,44 +165,46 @@ function AgentCard({ agent, behavior, seatOptions, roomLabels, onUpdate, onToggl
 
       {/* Room Access */}
       <div style={{ marginBottom: 14 }}>
-        <label style={{ fontSize: 12, color: "#999", display: "block", marginBottom: 6 }}>
-          Room Access
-          <span style={{ color: "#666", fontWeight: 400, marginLeft: 8 }}>
+        <label className="dio-label">
+          Room access
+          <span style={{ color: "var(--ink-3)", fontWeight: 450, marginLeft: 8 }}>
             (none checked = all rooms)
           </span>
         </label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {roomLabels.map((room) => (
-            <label
-              key={room}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                fontSize: 12,
-                color: "#ccc",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={behavior.allowedRooms.includes(room)}
-                onChange={() => onToggleRoom(room)}
-                style={{ accentColor: "#8090c0" }}
-              />
-              {room}
-            </label>
-          ))}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 12px" }}>
+          {roomLabels.map((room) => {
+            const on = behavior.allowedRooms.includes(room);
+            return (
+              <label
+                key={room}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  color: on ? "var(--ink)" : "var(--ink-2)",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={() => onToggleRoom(room)}
+                  style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+                />
+                <Checkbox on={on} />
+                {room}
+              </label>
+            );
+          })}
         </div>
       </div>
 
       {/* Energy Slider */}
       <div>
-        <label style={{ fontSize: 12, color: "#999", display: "block", marginBottom: 4 }}>
-          Energy
-        </label>
+        <label className="dio-label">Energy</label>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 11, color: "#666", minWidth: 32 }}>Calm</span>
+          <span style={{ fontSize: 11, color: "var(--ink-3)", minWidth: 32 }}>Calm</span>
           <input
             type="range"
             min={0}
@@ -222,10 +212,10 @@ function AgentCard({ agent, behavior, seatOptions, roomLabels, onUpdate, onToggl
             step={0.05}
             value={behavior.energy}
             onChange={(e) => onUpdate({ energy: parseFloat(e.target.value) })}
-            style={{ flex: 1, accentColor: "#8090c0" }}
+            style={{ flex: 1, accentColor: "var(--accent)" }}
           />
-          <span style={{ fontSize: 11, color: "#666", minWidth: 48 }}>Restless</span>
-          <span style={{ fontSize: 11, color: "#8090c0", minWidth: 28, textAlign: "right", fontFamily: "'SF Mono', 'Fira Code', monospace" }}>
+          <span style={{ fontSize: 11, color: "var(--ink-3)", minWidth: 48 }}>Restless</span>
+          <span className="dio-mono" style={{ fontSize: 11, color: "var(--accent)", minWidth: 28, textAlign: "right" }}>
             {behavior.energy.toFixed(2)}
           </span>
         </div>

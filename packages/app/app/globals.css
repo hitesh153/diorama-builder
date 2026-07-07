@@ -1,23 +1,329 @@
+/* Diorama design tokens + component vocabulary. See DESIGN.md. */
+
+:root {
+  /* color */
+  --bg: oklch(0.15 0.014 265);
+  --surface: oklch(0.19 0.016 265);
+  --surface-2: oklch(0.23 0.018 265);
+  --surface-3: oklch(0.27 0.02 265);
+  --border: oklch(0.29 0.02 265);
+  --border-strong: oklch(0.38 0.024 265);
+  --ink: oklch(0.94 0.008 265);
+  --ink-2: oklch(0.74 0.018 265);
+  --ink-3: oklch(0.58 0.02 265);
+  --accent: oklch(0.66 0.15 270);
+  --accent-hover: oklch(0.71 0.15 270);
+  --accent-active: oklch(0.61 0.15 270);
+  --accent-soft: oklch(0.66 0.15 270 / 0.14);
+  --accent-ink: oklch(0.97 0.01 270);
+  --ok: oklch(0.72 0.14 155);
+  --ok-soft: oklch(0.72 0.14 155 / 0.12);
+  --err: oklch(0.68 0.16 25);
+  --err-soft: oklch(0.68 0.16 25 / 0.12);
+  --warn: oklch(0.78 0.13 85);
+
+  /* type */
+  --font-ui: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* shape */
+  --r-ctl: 6px;
+  --r-panel: 10px;
+
+  /* motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-fast: 150ms;
+  --t-med: 200ms;
+
+  /* z */
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+}
+
 * {
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #0e1520;
-  color: #e0e0e0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.5;
+  letter-spacing: 0.002em;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: #8090c0;
+  color: var(--accent);
 }
 
 button {
   cursor: pointer;
   font-family: inherit;
+  font-size: inherit;
 }
 
-input, select {
+input,
+select,
+textarea {
   font-family: inherit;
+  font-size: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* ---------- buttons ---------- */
+
+.dio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--r-ctl);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+  user-select: none;
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.dio-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+.dio-btn:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+.dio-btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.dio-btn-primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+}
+.dio-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: transparent;
+}
+.dio-btn-primary:active:not(:disabled) {
+  background: var(--accent-active);
+}
+
+.dio-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-2);
+}
+.dio-btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+  border-color: transparent;
+}
+
+.dio-btn-danger {
+  background: transparent;
+  border-color: var(--err-soft);
+  color: var(--err);
+}
+.dio-btn-danger:hover:not(:disabled) {
+  background: var(--err-soft);
+  border-color: var(--err);
+}
+
+.dio-btn-sm {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+/* ---------- fields ---------- */
+
+.dio-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+}
+
+.dio-input,
+.dio-select {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--r-ctl);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.dio-input::placeholder {
+  color: var(--ink-2);
+  opacity: 0.75;
+}
+.dio-input:hover:not(:disabled),
+.dio-select:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+.dio-input:focus,
+.dio-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.dio-input:disabled,
+.dio-select:disabled {
+  color: var(--ink-3);
+  background: var(--surface);
+}
+.dio-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a4adc4' d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+.dio-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- cards ---------- */
+
+.dio-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+}
+
+.dio-card-interactive {
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  cursor: pointer;
+}
+.dio-card-interactive:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.dio-card-interactive[data-selected="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.dio-card-interactive:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* ---------- tabs ---------- */
+
+.dio-tab {
+  position: relative;
+  padding: 10px 2px;
+  background: none;
+  border: none;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 550;
+  transition: color var(--t-fast) var(--ease);
+}
+.dio-tab:hover {
+  color: var(--ink);
+}
+.dio-tab[data-active="true"] {
+  color: var(--ink);
+}
+.dio-tab[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+/* ---------- misc ---------- */
+
+.dio-kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.dio-divider {
+  height: 1px;
+  background: var(--border);
+  border: none;
+  margin: 0;
+}
+
+.dio-fade-in {
+  animation: dio-fade-in var(--t-med) var(--ease);
+}
+@keyframes dio-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dio-pulse {
+  animation: dio-pulse 1.2s ease-in-out infinite;
+}
+@keyframes dio-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

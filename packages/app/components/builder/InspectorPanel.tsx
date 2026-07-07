@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { furnitureDisplayName, type FurnitureItem } from "@diorama/engine";
 import type { RoomPlacement, FurnitureRef, BuilderAction } from "@diorama/ui/src/builderStore";
 
-const MONO = "'SF Mono', 'Fira Code', monospace";
-
 /**
  * Draft-buffered input: edits are local while typing and COMMIT on blur or
  * Enter (Escape reverts). Committing per keystroke would move rooms through
@@ -18,7 +16,7 @@ function CommitField({
   type = "text",
   min,
   step,
-  style,
+  className,
 }: {
   value: string;
   disabled?: boolean;
@@ -26,7 +24,7 @@ function CommitField({
   type?: "text" | "number";
   min?: number;
   step?: number;
-  style: React.CSSProperties;
+  className?: string;
 }) {
   const [draft, setDraft] = useState(value);
   // Re-sync when the source value changes (selection change, undo, drag...)
@@ -55,53 +53,22 @@ function CommitField({
         }
         e.stopPropagation();
       }}
-      style={style}
+      className={className}
     />
   );
 }
 
-const FIELD_LABEL: React.CSSProperties = {
-  display: "block",
-  fontSize: 10,
-  color: "#556",
-  textTransform: "uppercase",
-  letterSpacing: 0.5,
-  marginBottom: 4,
-  fontFamily: MONO,
-};
-
-const INPUT: React.CSSProperties = {
-  width: "100%",
-  boxSizing: "border-box",
-  padding: "5px 8px",
-  background: "#0a111c",
-  border: "1px solid #1a2535",
-  borderRadius: 5,
-  color: "#e0e0e0",
-  fontSize: 12,
-  fontFamily: MONO,
-  outline: "none",
-};
-
-const INPUT_DISABLED: React.CSSProperties = {
-  ...INPUT,
-  color: "#556",
-  cursor: "default",
-};
-
 const SECTION: React.CSSProperties = {
   padding: "12px 16px",
-  borderBottom: "1px solid #1a2535",
-  background: "#0d1520",
+  borderBottom: "1px solid var(--border)",
 };
 
 const HEADER: React.CSSProperties = {
   margin: "0 0 10px",
   fontSize: 11,
-  color: "#8090c0",
-  textTransform: "uppercase",
-  letterSpacing: 0.8,
-  fontFamily: MONO,
+  fontWeight: 550,
+  letterSpacing: "0.02em",
+  color: "var(--ink-2)",
 };
 
 interface InspectorPanelProps {
@@ -148,49 +115,36 @@ export function InspectorPanel({
       return (
         <div style={SECTION}>
           <h4 style={HEADER}>Furniture</h4>
-          <p style={{ fontSize: 13, margin: "0 0 10px", color: "#e0e0e0" }}>
+          <p style={{ fontSize: 13, margin: "0 0 10px", color: "var(--ink)" }}>
             {furnitureDisplayName(item as FurnitureItem, selectedFurniture.index)}
-            <span style={{ fontSize: 11, color: "#556", marginLeft: 8, fontFamily: MONO }}>
+            <span style={{ fontSize: 11, color: "var(--ink-3)", marginLeft: 8 }}>
               in {room.label}
             </span>
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
             <div>
-              <label style={FIELD_LABEL}>X</label>
+              <label className="dio-label">X</label>
               <CommitField
                 type="number"
                 step={0.1}
                 value={String(item.position[0])}
                 onCommit={(raw) => setPosition(0, raw)}
-                style={INPUT}
+                className="dio-input dio-mono"
               />
             </div>
             <div>
-              <label style={FIELD_LABEL}>Z</label>
+              <label className="dio-label">Z</label>
               <CommitField
                 type="number"
                 step={0.1}
                 value={String(item.position[2])}
                 onCommit={(raw) => setPosition(2, raw)}
-                style={INPUT}
+                className="dio-input dio-mono"
               />
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={rotate90}
-              style={{
-                flex: 1,
-                padding: "7px 0",
-                background: "#1a2535",
-                color: "#c0d0e0",
-                border: "1px solid #2a3545",
-                borderRadius: 6,
-                fontSize: 12,
-                cursor: "pointer",
-                fontFamily: MONO,
-              }}
-            >
+            <button onClick={rotate90} className="dio-btn dio-btn-sm" style={{ flex: 1 }}>
               ↻ 90°
             </button>
             <button
@@ -201,17 +155,8 @@ export function InspectorPanel({
                   furnitureIndex: selectedFurniture.index,
                 })
               }
-              style={{
-                flex: 1,
-                padding: "7px 0",
-                background: "transparent",
-                color: "#ff6b6b",
-                border: "1px solid #ff6b6b33",
-                borderRadius: 6,
-                fontSize: 12,
-                cursor: "pointer",
-                fontFamily: MONO,
-              }}
+              className="dio-btn dio-btn-danger dio-btn-sm"
+              style={{ flex: 1 }}
             >
               Delete
             </button>
@@ -249,23 +194,23 @@ export function InspectorPanel({
     <div style={SECTION}>
       <h4 style={HEADER}>Inspector</h4>
       {multi && (
-        <p style={{ fontSize: 12, color: "#8090c0", margin: "0 0 10px", fontFamily: MONO }}>
+        <p className="dio-mono" style={{ fontSize: 12, color: "var(--ink-2)", margin: "0 0 10px" }}>
           {selectedRoomIds.length} rooms selected
         </p>
       )}
       <div style={{ marginBottom: 10 }}>
-        <label style={FIELD_LABEL}>Label</label>
+        <label className="dio-label">Label</label>
         <CommitField
           type="text"
           value={room.label}
           disabled={multi}
           onCommit={(raw) => raw.trim() && dispatch({ type: "UPDATE_ROOM", roomId: room.id, updates: { label: raw.trim() } })}
-          style={multi ? INPUT_DISABLED : INPUT}
+          className="dio-input"
         />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
         <div>
-          <label style={FIELD_LABEL}>X</label>
+          <label className="dio-label">X</label>
           <CommitField
             type="number"
             min={0}
@@ -273,11 +218,11 @@ export function InspectorPanel({
             value={String(room.position[0])}
             disabled={multi}
             onCommit={(raw) => moveAxis(0, raw)}
-            style={multi ? INPUT_DISABLED : INPUT}
+            className="dio-input dio-mono"
           />
         </div>
         <div>
-          <label style={FIELD_LABEL}>Y</label>
+          <label className="dio-label">Y</label>
           <CommitField
             type="number"
             min={0}
@@ -285,11 +230,11 @@ export function InspectorPanel({
             value={String(room.position[1])}
             disabled={multi}
             onCommit={(raw) => moveAxis(1, raw)}
-            style={multi ? INPUT_DISABLED : INPUT}
+            className="dio-input dio-mono"
           />
         </div>
         <div>
-          <label style={FIELD_LABEL}>W</label>
+          <label className="dio-label">W</label>
           <CommitField
             type="number"
             min={1}
@@ -297,11 +242,11 @@ export function InspectorPanel({
             value={String(w)}
             disabled={multi}
             onCommit={(raw) => resizeAxis(0, raw)}
-            style={multi ? INPUT_DISABLED : INPUT}
+            className="dio-input dio-mono"
           />
         </div>
         <div>
-          <label style={FIELD_LABEL}>H</label>
+          <label className="dio-label">H</label>
           <CommitField
             type="number"
             min={1}
@@ -309,11 +254,11 @@ export function InspectorPanel({
             value={String(h)}
             disabled={multi}
             onCommit={(raw) => resizeAxis(1, raw)}
-            style={multi ? INPUT_DISABLED : INPUT}
+            className="dio-input dio-mono"
           />
         </div>
       </div>
-      <p style={{ fontSize: 11, color: "#556", margin: 0, fontFamily: MONO }}>
+      <p className="dio-mono" style={{ fontSize: 11, color: "var(--ink-3)", margin: 0 }}>
         {w}×{h} cells · {w * h} cells² · {(w * h).toFixed(1)} m²
       </p>
     </div>

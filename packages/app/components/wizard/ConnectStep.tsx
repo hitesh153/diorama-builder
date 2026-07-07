@@ -21,6 +21,37 @@ interface DetectedSource {
   detail: string;
 }
 
+const SOURCE_GLYPHS: Record<string, string> = {
+  codex: "⌘",
+  "claude-code": "✳",
+  ingest: "→",
+};
+
+function Checkbox({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 16,
+        height: 16,
+        borderRadius: 4,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 11,
+        fontWeight: 650,
+        background: on ? "var(--accent)" : "transparent",
+        border: on ? "1px solid transparent" : "1px solid var(--border-strong)",
+        color: "var(--accent-ink)",
+        transition: "background var(--t-fast) var(--ease)",
+      }}
+    >
+      {on ? "✓" : ""}
+    </span>
+  );
+}
+
 export function ConnectStep({ onNext }: ConnectStepProps) {
   const [url, setUrl] = useState("");
   const [token, setToken] = useState("");
@@ -37,7 +68,6 @@ export function ConnectStep({ onNext }: ConnectStepProps) {
       .then((r) => r.json())
       .then((data: { sources: DetectedSource[] }) => {
         setDetected(data.sources);
-        // Preselect everything that's actually available (except raw ingest)
         setSelected(new Set(data.sources.filter((s) => s.available && s.type !== "ingest").map((s) => s.type)));
       })
       .catch(() => setDetected([]));
@@ -78,21 +108,35 @@ export function ConnectStep({ onNext }: ConnectStepProps) {
     return sources;
   };
 
-  const anythingConnected = selected.size > 0 || (gatewayOk && Boolean(url));
+  const count = selected.size + (gatewayOk ? 1 : 0);
+
+  const cardBase: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    width: "100%",
+    textAlign: "left",
+    padding: "12px 14px",
+  };
 
   return (
-    <div style={{ maxWidth: 520, width: "100%" }}>
-      <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Connect your agents</h2>
-      <p style={{ color: "#999", marginBottom: 20, fontSize: 14 }}>
-        Diorama found these agent runtimes on your machine. Pick what to visualize — or push
-        events from anything over HTTP.
+    <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
+      <h1 style={{ fontSize: 20, fontWeight: 650, margin: "0 0 6px", letterSpacing: "-0.01em" }}>
+        Connect your agents
+      </h1>
+      <p style={{ color: "var(--ink-2)", margin: "0 0 28px", maxWidth: "44ch" }}>
+        Diorama scanned this machine for agent runtimes. Pick what to visualize; you can also
+        push events from anything over HTTP.
       </p>
 
-      {/* Detected source cards */}
       {detected === null ? (
-        <p style={{ color: "#666", fontSize: 13 }}>Scanning for agent runtimes…</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="dio-card dio-pulse" style={{ height: 62 }} />
+          ))}
+        </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {detected.map((source) => {
             const isOn = selected.has(source.type);
             return (
@@ -100,196 +144,137 @@ export function ConnectStep({ onNext }: ConnectStepProps) {
                 key={source.type}
                 onClick={() => source.available && toggle(source.type)}
                 disabled={!source.available}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  textAlign: "left",
-                  padding: "12px 14px",
-                  background: isOn ? "#16233a" : "#111827",
-                  border: isOn ? "1px solid #8090c0" : "1px solid #1a2535",
-                  borderRadius: 10,
-                  cursor: source.available ? "pointer" : "default",
-                  opacity: source.available ? 1 : 0.45,
-                }}
+                className="dio-card dio-card-interactive"
+                data-selected={isOn}
+                style={cardBase}
               >
+                <Checkbox on={isOn} />
                 <span
+                  aria-hidden
                   style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 5,
+                    width: 28,
+                    height: 28,
+                    borderRadius: 7,
                     flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 12,
-                    background: isOn ? "#8090c0" : "transparent",
-                    border: isOn ? "none" : "1px solid #2a3a50",
-                    color: "#fff",
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--border)",
+                    color: "var(--ink-2)",
+                    fontSize: 13,
                   }}
                 >
-                  {isOn ? "✓" : ""}
+                  {SOURCE_GLYPHS[source.type] ?? "•"}
                 </span>
-                <span style={{ flex: 1 }}>
-                  <span style={{ display: "block", fontSize: 14, color: "#e0e0e0", fontWeight: 600 }}>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 550, color: "var(--ink)" }}>
                     {source.label}
                   </span>
-                  <span style={{ display: "block", fontSize: 12, color: source.available ? "#7a8" : "#666", marginTop: 2 }}>
-                    {source.available ? "✓ " : ""}{source.detail}
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: 12,
+                      marginTop: 1,
+                      color: source.available ? "var(--ok)" : "var(--ink-3)",
+                    }}
+                  >
+                    {source.detail}
                   </span>
                 </span>
               </button>
             );
           })}
 
-          {/* OpenClaw gateway card (expandable form) */}
-          <div
-            style={{
-              padding: "12px 14px",
-              background: gatewayOk ? "#16233a" : "#111827",
-              border: gatewayOk ? "1px solid #8090c0" : "1px solid #1a2535",
-              borderRadius: 10,
-            }}
-          >
+          {/* OpenClaw gateway — expandable */}
+          <div className="dio-card" data-selected={gatewayOk} style={{ overflow: "hidden" }}>
             <button
               onClick={() => setShowGatewayForm((v) => !v)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                width: "100%",
-                textAlign: "left",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-              }}
+              style={{ ...cardBase, background: "none", border: "none", color: "inherit" }}
             >
+              <Checkbox on={gatewayOk} />
               <span
+                aria-hidden
                 style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 5,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 7,
                   flexShrink: 0,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 12,
-                  background: gatewayOk ? "#8090c0" : "transparent",
-                  border: gatewayOk ? "none" : "1px solid #2a3a50",
-                  color: "#fff",
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--border)",
+                  color: "var(--ink-2)",
+                  fontSize: 13,
                 }}
               >
-                {gatewayOk ? "✓" : ""}
+                ⇄
               </span>
-              <span style={{ flex: 1 }}>
-                <span style={{ display: "block", fontSize: 14, color: "#e0e0e0", fontWeight: 600 }}>
-                  OpenClaw gateway
-                </span>
-                <span style={{ display: "block", fontSize: 12, color: gatewayOk ? "#7a8" : "#666", marginTop: 2 }}>
-                  {gatewayOk ? `✓ connected to ${url}` : "connect over WebSocket"}
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontWeight: 550 }}>OpenClaw gateway</span>
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: 12,
+                    marginTop: 1,
+                    color: gatewayOk ? "var(--ok)" : "var(--ink-3)",
+                  }}
+                >
+                  {gatewayOk ? `connected to ${url}` : "connect over WebSocket"}
                 </span>
               </span>
-              <span style={{ color: "#556", fontSize: 12 }}>{showGatewayForm ? "▴" : "▾"}</span>
+              <span style={{ color: "var(--ink-3)", fontSize: 11 }}>{showGatewayForm ? "▲" : "▼"}</span>
             </button>
 
             {showGatewayForm && (
-              <div style={{ marginTop: 12 }}>
+              <div style={{ padding: "0 14px 14px 56px", display: "flex", flexDirection: "column", gap: 8 }}>
                 <input
                   type="text"
+                  className="dio-input dio-mono"
                   value={url}
                   onChange={(e) => {
                     setUrl(e.target.value);
                     setGatewayOk(false);
                   }}
                   placeholder="ws://localhost:4040"
-                  style={inputStyle}
                 />
                 <input
                   type="password"
+                  className="dio-input dio-mono"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  placeholder="token (optional, $OPENCLAW_TOKEN)"
-                  style={{ ...inputStyle, marginTop: 8 }}
+                  placeholder="token (optional)"
                 />
-                <button
-                  onClick={testConnection}
-                  disabled={testing || !url}
-                  style={{ ...buttonSecondary, marginTop: 10, fontSize: 13, padding: "8px 16px" }}
-                >
-                  {testing ? "Testing…" : "Test connection"}
-                </button>
-                {error && <p style={{ color: "#ff6b6b", fontSize: 12, marginTop: 8 }}>{error}</p>}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <button onClick={testConnection} disabled={testing || !url} className="dio-btn dio-btn-sm">
+                    {testing ? "Testing…" : "Test connection"}
+                  </button>
+                  {error && <span style={{ color: "var(--err)", fontSize: 12 }}>{error}</span>}
+                </div>
               </div>
             )}
           </div>
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-        <button
-          onClick={() => onNext({ url: gatewayOk ? url : "", token: gatewayOk ? token : "", useDemoData: false, sources: buildSources() })}
-          disabled={!anythingConnected}
-          style={anythingConnected ? buttonPrimary : buttonDisabled}
-        >
-          Continue with {selected.size + (gatewayOk ? 1 : 0)} source{selected.size + (gatewayOk ? 1 : 0) === 1 ? "" : "s"}
-        </button>
-      </div>
-
-      <div style={{ marginTop: 24, borderTop: "1px solid #1a2535", paddingTop: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 24 }}>
         <button
           onClick={() => onNext({ url: "", token: "", useDemoData: true, sources: [] })}
-          style={{ ...buttonSecondary, fontSize: 13 }}
+          className="dio-btn dio-btn-ghost"
         >
-          Use Demo Data Instead
+          Preview with demo agents
         </button>
-        <p style={{ color: "#666", fontSize: 12, marginTop: 8 }}>
-          Skip connections and preview with sample agents.
-        </p>
+        <button
+          onClick={() =>
+            onNext({ url: gatewayOk ? url : "", token: gatewayOk ? token : "", useDemoData: false, sources: buildSources() })
+          }
+          disabled={count === 0}
+          className="dio-btn dio-btn-primary"
+        >
+          Continue with {count} source{count === 1 ? "" : "s"}
+        </button>
       </div>
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  boxSizing: "border-box",
-  padding: "10px 12px",
-  background: "#0a111c",
-  border: "1px solid #1a2535",
-  borderRadius: 6,
-  color: "#e0e0e0",
-  fontSize: 14,
-  outline: "none",
-};
-
-const buttonPrimary: React.CSSProperties = {
-  padding: "10px 24px",
-  background: "#8090c0",
-  color: "#fff",
-  border: "none",
-  borderRadius: 6,
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonSecondary: React.CSSProperties = {
-  padding: "10px 24px",
-  background: "transparent",
-  color: "#8090c0",
-  border: "1px solid #8090c0",
-  borderRadius: 6,
-  fontSize: 14,
-  cursor: "pointer",
-};
-
-const buttonDisabled: React.CSSProperties = {
-  padding: "10px 24px",
-  background: "#1a2030",
-  color: "#555",
-  border: "none",
-  borderRadius: 6,
-  fontSize: 14,
-  fontWeight: 600,
-};

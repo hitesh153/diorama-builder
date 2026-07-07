@@ -65,79 +65,77 @@ export function LaunchStep({ gatewayUrl, gatewayToken, sources, theme, rooms, ag
     }
   };
 
+  const summaryRows: Array<{ key: string; value: React.ReactNode }> = [
+    { key: "Theme", value: <span className="dio-mono">{theme}</span> },
+    {
+      key: "Rooms",
+      value: (
+        <>
+          <span className="dio-mono">{rooms.length}</span>
+          {rooms.length > 0 && (
+            <span style={{ color: "var(--ink-2)" }}> · {rooms.map((r) => r.label).join(", ")}</span>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "Agents",
+      value: (
+        <>
+          <span className="dio-mono">{Object.keys(agentAssignments).length}</span>
+          <span style={{ color: "var(--ink-2)" }}> assigned</span>
+        </>
+      ),
+    },
+    {
+      key: "Sources",
+      value: (
+        <span className="dio-mono">
+          {sources.length > 0
+            ? sources.map((s) => s.type).join(", ")
+            : gatewayUrl || "(demo mode)"}
+        </span>
+      ),
+    },
+  ];
+
   return (
-    <div style={{ maxWidth: 500, width: "100%" }}>
-      <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>Ready to Launch</h2>
+    <div style={{ maxWidth: 560, width: "100%", margin: "0 auto" }}>
+      <h1 style={{ fontSize: 20, fontWeight: 650, margin: "0 0 24px", letterSpacing: "-0.01em" }}>
+        Ready to launch
+      </h1>
 
-      <div style={{ background: "#1a2535", borderRadius: 8, padding: 20, marginBottom: 24 }}>
-        <div style={{ marginBottom: 16 }}>
-          <span style={{ fontSize: 12, color: "#999" }}>Theme</span>
-          <p style={{ fontSize: 14, margin: "4px 0 0" }}>{theme}</p>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <span style={{ fontSize: 12, color: "#999" }}>Rooms</span>
-          <p style={{ fontSize: 14, margin: "4px 0 0" }}>
-            {rooms.length} room{rooms.length !== 1 ? "s" : ""}
-            {rooms.length > 0 && ` (${rooms.map((r) => r.label).join(", ")})`}
-          </p>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <span style={{ fontSize: 12, color: "#999" }}>Agents</span>
-          <p style={{ fontSize: 14, margin: "4px 0 0" }}>
-            {Object.keys(agentAssignments).length} assigned
-          </p>
-        </div>
-
-        <div>
-          <span style={{ fontSize: 12, color: "#999" }}>Sources</span>
-          <p style={{ fontSize: 14, margin: "4px 0 0" }}>
-            {sources.length > 0
-              ? sources.map((s) => s.type).join(", ")
-              : gatewayUrl || "(demo mode)"}
-          </p>
-        </div>
+      <div className="dio-card" style={{ marginBottom: 24 }}>
+        {summaryRows.map((row, i) => (
+          <div
+            key={row.key}
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              gap: 16,
+              padding: "12px 16px",
+              borderTop: i > 0 ? "1px solid var(--border)" : "none",
+            }}
+          >
+            <span style={{ fontSize: 12, color: "var(--ink-2)", flexShrink: 0 }}>{row.key}</span>
+            <span style={{ fontSize: 13, textAlign: "right" }}>{row.value}</span>
+          </div>
+        ))}
       </div>
 
       {error && (
-        <div style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 16 }}>
+        <div style={{ color: "var(--err)", fontSize: 13, marginBottom: 16 }}>
           {error}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 12 }}>
-        <button
-          onClick={onBack}
-          style={{
-            flex: 1,
-            padding: "12px 0",
-            background: "transparent",
-            color: "#888",
-            border: "1px solid #333",
-            borderRadius: 8,
-            fontSize: 14,
-            cursor: "pointer",
-          }}
-        >
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <button onClick={onBack} className="dio-btn dio-btn-ghost">
           Back
         </button>
-        <button
-          onClick={handleLaunch}
-          disabled={saving}
-          style={{
-            flex: 2,
-            padding: "12px 0",
-            background: "#8090c0",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: saving ? "wait" : "pointer",
-          }}
-        >
-          {saving ? "Saving..." : "Save & Launch"}
+        <button onClick={handleLaunch} disabled={saving} className="dio-btn dio-btn-primary">
+          {saving ? "Saving…" : "Save & Launch"}
         </button>
       </div>
     </div>

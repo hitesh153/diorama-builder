@@ -78,17 +78,17 @@ export function BuilderSidebar({ config, selectedRoom, onConfigChange, onSelectR
   return (
     <div
       style={{
-        width: 280,
-        background: "#111827",
-        borderLeft: "1px solid #1f2937",
+        width: 300,
+        background: "var(--surface)",
+        borderLeft: "1px solid var(--border)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
       }}
     >
       {/* Header */}
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid #1f2937" }}>
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Builder</h3>
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 650 }}>Builder</h3>
       </div>
 
       {/* Undo/Redo */}
@@ -100,22 +100,14 @@ export function BuilderSidebar({ config, selectedRoom, onConfigChange, onSelectR
       />
 
       {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid #1f2937" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid var(--border)" }}>
         {(["rooms", "theme"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            style={{
-              flex: 1,
-              padding: "8px 0",
-              background: "transparent",
-              color: tab === t ? "#8090c0" : "#666",
-              border: "none",
-              borderBottom: tab === t ? "2px solid #8090c0" : "2px solid transparent",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
+            className="dio-tab"
+            data-active={tab === t}
+            style={{ flex: 1 }}
           >
             {t === "rooms" ? "Rooms" : "Theme"}
           </button>
@@ -163,22 +155,14 @@ export function BuilderSidebar({ config, selectedRoom, onConfigChange, onSelectR
       </div>
 
       {/* Reset button */}
-      <div style={{ padding: 12, borderTop: "1px solid #1f2937" }}>
+      <div style={{ padding: 12, borderTop: "1px solid var(--border)" }}>
         <button
           onClick={async () => {
             await fetch("/api/config", { method: "DELETE" });
             window.location.href = "/wizard";
           }}
-          style={{
-            width: "100%",
-            padding: "8px 0",
-            background: "transparent",
-            color: "#666",
-            border: "1px solid #333",
-            borderRadius: 6,
-            fontSize: 12,
-            cursor: "pointer",
-          }}
+          className="dio-btn dio-btn-danger"
+          style={{ width: "100%" }}
         >
           Reset Configuration
         </button>

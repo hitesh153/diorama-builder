@@ -15,7 +15,7 @@ import { useGatewayEvents } from "@/hooks/useGatewayEvents";
 import { useMockEventSource } from "@/hooks/useMockEventSource";
 import { useIngestEvents } from "@/hooks/useIngestEvents";
 
-const MONO = "'SF Mono', 'Fira Code', monospace";
+// Agent identity colors (data, not UI chrome — intentionally not design tokens)
 const AGENT_COLORS = ["#60a0ff", "#ff6090", "#60ffa0", "#ffa060", "#a060ff", "#ff60ff", "#60ffff"];
 
 const ACTIVITY_ICONS: Record<AgentActivity, string> = {
@@ -127,7 +127,7 @@ export function DashboardView({ config }: DashboardViewProps) {
         });
       }
 
-      const color = agentsRef.current.find((a) => a.id === event.agent)?.color ?? "#8090c0";
+      const color = agentsRef.current.find((a) => a.id === event.agent)?.color ?? "var(--accent)";
       setFeed((prev) => {
         const next = [{ id: `${Date.now()}-${Math.random()}`, label, color, at: Date.now() }, ...prev];
         return next.length > 40 ? next.slice(0, 40) : next;
@@ -165,10 +165,10 @@ export function DashboardView({ config }: DashboardViewProps) {
   };
 
   return (
-    <div style={{ padding: 24, overflowY: "auto", height: "100%", background: "#0d1520" }}>
-      <h2 style={{ margin: "0 0 20px", fontSize: 18 }}>
+    <div style={{ padding: 24, overflowY: "auto", height: "100%", background: "var(--bg)" }}>
+      <h2 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 650, letterSpacing: "-0.01em" }}>
         {config.name}
-        <span style={{ fontSize: 12, color: "#556", marginLeft: 12, fontFamily: MONO }}>
+        <span className="dio-mono" style={{ fontSize: 12, fontWeight: 450, color: "var(--ink-3)", marginLeft: 12 }}>
           {isDemoMode ? "demo" : localSources.filter((s) => s !== "ingest").join(" + ") || "live"}
         </span>
       </h2>
@@ -185,58 +185,57 @@ export function DashboardView({ config }: DashboardViewProps) {
         {agents.map((agent, i) => (
           <div
             key={`${agent.id}-${i}`}
+            className="dio-card"
             style={{
-              background: "#111a28",
-              borderRadius: 10,
               padding: 14,
-              border: agent.activity !== "idle" ? `1px solid ${agent.color}55` : "1px solid #1a2535",
+              ...(agent.activity !== "idle" ? { borderColor: `${agent.color}55` } : {}),
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: agent.color }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#e0e0e0", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 550, color: "var(--ink)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {agent.id}
               </span>
               <span style={{ fontSize: 13 }}>{ACTIVITY_ICONS[agent.activity]}</span>
             </div>
-            <p style={{ margin: 0, fontSize: 11.5, color: "#8090b0", fontFamily: MONO, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p className="dio-mono" style={{ margin: 0, fontSize: 11.5, color: "var(--ink-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {agent.lastLabel}
             </p>
-            <p style={{ margin: "4px 0 0", fontSize: 10.5, color: "#556", fontFamily: MONO }}>
+            <p className="dio-mono" style={{ margin: "4px 0 0", fontSize: 10.5, color: "var(--ink-3)" }}>
               {agent.room || "—"}{agent.lastAt ? ` · ${ago(agent.lastAt)}` : ""}
             </p>
           </div>
         ))}
         {agents.length === 0 && (
-          <p style={{ color: "#556", fontSize: 13 }}>No agents yet — events will populate this grid.</p>
+          <p style={{ color: "var(--ink-3)", fontSize: 13 }}>No agents yet — events will populate this grid.</p>
         )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16 }}>
         {/* Activity stream */}
-        <div style={{ background: "#111a28", borderRadius: 10, border: "1px solid #1a2535", padding: 16, minHeight: 220 }}>
-          <h4 style={{ margin: "0 0 10px", fontSize: 11, color: "#8090c0", textTransform: "uppercase", letterSpacing: 0.8, fontFamily: MONO }}>
+        <div className="dio-card" style={{ padding: 16, minHeight: 220 }}>
+          <h4 style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>
             Activity
           </h4>
-          {feed.length === 0 && <p style={{ color: "#556", fontSize: 12 }}>Waiting for events…</p>}
+          {feed.length === 0 && <p style={{ color: "var(--ink-3)", fontSize: 12 }}>Waiting for events…</p>}
           {feed.map((row) => (
-            <div key={row.id} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0", fontSize: 12, fontFamily: MONO }}>
+            <div key={row.id} className="dio-mono" style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0", fontSize: 12 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: row.color, flexShrink: 0, alignSelf: "center" }} />
-              <span style={{ color: "#c0cbe0", flex: 1 }}>{row.label}</span>
-              <span style={{ color: "#556", fontSize: 10.5, flexShrink: 0 }}>{ago(row.at)}</span>
+              <span style={{ color: "var(--ink-2)", flex: 1 }}>{row.label}</span>
+              <span style={{ color: "var(--ink-3)", fontSize: 10.5, flexShrink: 0 }}>{ago(row.at)}</span>
             </div>
           ))}
         </div>
 
         {/* Room occupancy */}
-        <div style={{ background: "#111a28", borderRadius: 10, border: "1px solid #1a2535", padding: 16 }}>
-          <h4 style={{ margin: "0 0 10px", fontSize: 11, color: "#8090c0", textTransform: "uppercase", letterSpacing: 0.8, fontFamily: MONO }}>
+        <div className="dio-card" style={{ padding: 16 }}>
+          <h4 style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>
             Rooms
           </h4>
           {config.rooms.map((room, i) => (
             <div key={`${room.label}-${i}`} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5 }}>
-              <span style={{ color: "#c0cbe0" }}>{room.label}</span>
-              <span style={{ color: "#667", fontFamily: MONO, fontSize: 11.5 }}>
+              <span style={{ color: "var(--ink-2)" }}>{room.label}</span>
+              <span className="dio-mono" style={{ color: "var(--ink-3)", fontSize: 11.5 }}>
                 {roomCounts.get(i) ?? 0} events
               </span>
             </div>

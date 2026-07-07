@@ -10,71 +10,29 @@ interface ProToolbarProps {
   onFit: () => void;
 }
 
-const TOOL_BTN: React.CSSProperties = {
-  padding: "4px 10px",
-  background: "transparent",
-  border: "1px solid transparent",
-  borderRadius: 5,
-  fontSize: 12,
-  cursor: "pointer",
-  color: "#8090a0",
-  fontFamily: "'SF Mono', 'Fira Code', monospace",
-  display: "flex",
-  alignItems: "center",
-  gap: 5,
-  whiteSpace: "nowrap",
-};
-
-const TOOL_BTN_ACTIVE: React.CSSProperties = {
-  ...TOOL_BTN,
-  background: "#1a2840",
-  border: "1px solid #3b82f6",
-  color: "#e0e8ff",
-};
-
 const DIVIDER: React.CSSProperties = {
   width: 1,
   height: 20,
-  background: "#1e2d42",
+  background: "var(--border)",
   margin: "0 6px",
   flexShrink: 0,
 };
 
-const ICON_BTN: React.CSSProperties = {
-  width: 28,
-  height: 28,
-  background: "transparent",
-  border: "1px solid transparent",
-  borderRadius: 5,
-  fontSize: 14,
-  cursor: "pointer",
-  color: "#8090a0",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const ICON_BTN_DISABLED: React.CSSProperties = {
-  ...ICON_BTN,
-  color: "#2a3545",
-  cursor: "default",
-};
-
 const SEG_BTN: React.CSSProperties = {
-  padding: "4px 12px",
+  padding: "3px 12px",
   background: "transparent",
   border: "none",
-  fontSize: 11,
-  fontWeight: 600,
-  cursor: "pointer",
-  color: "#8090a0",
-  fontFamily: "'SF Mono', 'Fira Code', monospace",
+  borderRadius: 4,
+  fontSize: 12,
+  fontWeight: 550,
+  color: "var(--ink-2)",
+  transition: "background var(--t-fast) var(--ease), color var(--t-fast) var(--ease)",
 };
 
 const SEG_BTN_ACTIVE: React.CSSProperties = {
   ...SEG_BTN,
-  background: "#1a2840",
-  color: "#e0e8ff",
+  background: "var(--surface-3)",
+  color: "var(--ink)",
 };
 
 export function ProToolbar({
@@ -89,18 +47,31 @@ export function ProToolbar({
   return (
     <div style={{
       height: 44,
-      background: "rgba(8,14,24,0.94)",
-      backdropFilter: "blur(8px)",
-      borderBottom: "1px solid rgba(255,255,255,0.06)",
+      background: "var(--surface)",
+      borderBottom: "1px solid var(--border)",
       display: "flex",
       alignItems: "center",
       padding: "0 12px",
       gap: 4,
       userSelect: "none",
     }}>
-      {/* Select indicator */}
-      <div style={TOOL_BTN_ACTIVE}>
-        <span>▸</span> Select
+      {/* Select indicator — quiet chip */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "3px 10px",
+          borderRadius: 5,
+          background: "var(--surface-2)",
+          border: "1px solid var(--border)",
+          fontSize: 12,
+          fontWeight: 550,
+          color: "var(--ink-2)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span aria-hidden>▸</span> Select
       </div>
 
       <div style={DIVIDER} />
@@ -108,9 +79,9 @@ export function ProToolbar({
       {/* 2D | 3D segmented view toggle */}
       <div style={{
         display: "flex",
-        border: "1px solid #1e2d42",
+        padding: 2,
+        background: "var(--surface-2)",
         borderRadius: 6,
-        overflow: "hidden",
         flexShrink: 0,
       }}>
         <button
@@ -130,7 +101,7 @@ export function ProToolbar({
       </div>
 
       {/* Zoom to fit */}
-      <button onClick={onFit} title="Zoom to fit (F)" style={TOOL_BTN}>
+      <button onClick={onFit} title="Zoom to fit (F)" className="dio-btn dio-btn-ghost dio-btn-sm">
         ⤢ Fit
       </button>
 
@@ -141,7 +112,8 @@ export function ProToolbar({
         onClick={canUndo ? onUndo : undefined}
         disabled={!canUndo}
         title="Undo (Ctrl+Z)"
-        style={canUndo ? { ...ICON_BTN, color: "#c0d0e0" } : ICON_BTN_DISABLED}
+        className="dio-btn dio-btn-ghost dio-btn-sm"
+        style={{ width: 28, padding: 0, fontSize: 14 }}
       >
         ↩
       </button>
@@ -149,7 +121,8 @@ export function ProToolbar({
         onClick={canRedo ? onRedo : undefined}
         disabled={!canRedo}
         title="Redo (Ctrl+Shift+Z)"
-        style={canRedo ? { ...ICON_BTN, color: "#c0d0e0" } : ICON_BTN_DISABLED}
+        className="dio-btn dio-btn-ghost dio-btn-sm"
+        style={{ width: 28, padding: 0, fontSize: 14 }}
       >
         ↪
       </button>
@@ -157,9 +130,15 @@ export function ProToolbar({
       {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* Keyboard shortcut hint */}
-      <div style={{ fontSize: 10, color: "#2a3545", fontFamily: "'SF Mono', 'Fira Code', monospace" }}>
-        V select · 2/3 view · F fit · ⌘D duplicate · D delete · Esc cancel
+      {/* Keyboard shortcut hints */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-3)", whiteSpace: "nowrap" }}>
+        <span><kbd className="dio-kbd">2</kbd>/<kbd className="dio-kbd">3</kbd> view</span>
+        <span aria-hidden>·</span>
+        <span><kbd className="dio-kbd">F</kbd> fit</span>
+        <span aria-hidden>·</span>
+        <span><kbd className="dio-kbd">⌘D</kbd> duplicate</span>
+        <span aria-hidden>·</span>
+        <span><kbd className="dio-kbd">⌫</kbd> delete</span>
       </div>
     </div>
   );

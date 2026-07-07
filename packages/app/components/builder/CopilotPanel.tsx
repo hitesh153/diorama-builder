@@ -9,7 +9,6 @@ import {
 import { builderReducer, type BuilderState, type BuilderAction } from "@diorama/ui/src/builderStore";
 import { PROVIDER_LABELS, type CopilotProviderConfig } from "@diorama/plugins/copilot/providers";
 
-const MONO = "'SF Mono', 'Fira Code', monospace";
 const MAX_TOOL_ROUNDS = 5;
 
 // Wire types matching the /api/copilot/chat contract
@@ -190,7 +189,7 @@ export function CopilotPanel({
   };
 
   if (configured === null) {
-    return <div style={{ padding: 16, fontSize: 12, color: "#666", fontFamily: MONO }}>Loading…</div>;
+    return <div style={{ padding: 16, fontSize: 12, color: "var(--ink-3)" }}>Loading…</div>;
   }
 
   if (!configured || showSettings) {
@@ -216,13 +215,14 @@ export function CopilotPanel({
           padding: "10px 16px 6px",
         }}
       >
-        <h4 style={{ margin: 0, fontSize: 11, color: "#8090c0", textTransform: "uppercase", letterSpacing: 0.8, fontFamily: MONO }}>
+        <h4 style={{ margin: 0, fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>
           ✦ Copilot
         </h4>
         <button
           onClick={() => setShowSettings(true)}
           title="Provider settings"
-          style={{ background: "transparent", border: "none", color: "#556", cursor: "pointer", fontSize: 14 }}
+          className="dio-btn dio-btn-ghost dio-btn-sm"
+          style={{ width: 26, padding: 0, fontSize: 14 }}
         >
           ⚙
         </button>
@@ -232,25 +232,22 @@ export function CopilotPanel({
       <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 12px" }}>
         {messages.length === 0 && (
           <div style={{ padding: "12px 4px" }}>
-            <p style={{ fontSize: 12, color: "#667", margin: "0 0 10px" }}>
+            <p style={{ fontSize: 12, color: "var(--ink-2)", margin: "0 0 10px" }}>
               Describe what you want and I&apos;ll build it — rooms, themes, layouts, agent seating.
             </p>
             {QUICK_PROMPTS.map((q) => (
               <button
                 key={q}
                 onClick={() => send(q)}
+                className="dio-card dio-card-interactive"
                 style={{
                   display: "block",
                   width: "100%",
                   textAlign: "left",
                   marginBottom: 6,
                   padding: "8px 10px",
-                  background: "#111a28",
-                  border: "1px solid #1a2535",
-                  borderRadius: 8,
-                  color: "#a0b0d0",
+                  color: "var(--ink-2)",
                   fontSize: 12,
-                  cursor: "pointer",
                 }}
               >
                 {q}
@@ -262,7 +259,7 @@ export function CopilotPanel({
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: 10 }}>
             {msg.role === "system" ? (
-              <p style={{ fontSize: 11, color: "#ff6b6b", fontFamily: MONO, margin: 0, padding: "4px 6px" }}>
+              <p className="dio-mono" style={{ fontSize: 11, color: "var(--err)", margin: 0, padding: "4px 6px" }}>
                 {msg.text}
               </p>
             ) : (
@@ -282,9 +279,12 @@ export function CopilotPanel({
                       fontSize: 12.5,
                       lineHeight: 1.45,
                       whiteSpace: "pre-wrap",
-                      background: msg.role === "user" ? "#26355a" : "#131c2b",
-                      border: msg.role === "user" ? "1px solid #35476f" : "1px solid #1a2535",
-                      color: "#dde4f0",
+                      background: msg.role === "user" ? "var(--accent-soft)" : "var(--surface-2)",
+                      border:
+                        msg.role === "user"
+                          ? "1px solid color-mix(in oklab, var(--accent) 30%, transparent)"
+                          : "1px solid var(--border)",
+                      color: "var(--ink)",
                     }}
                   >
                     {msg.text}
@@ -295,14 +295,16 @@ export function CopilotPanel({
                     {msg.chips.map((chip, j) => (
                       <span
                         key={j}
+                        className="dio-mono"
                         style={{
                           fontSize: 10.5,
-                          fontFamily: MONO,
                           padding: "3px 8px",
                           borderRadius: 5,
-                          background: chip.ok ? "#12281c" : "#2b1518",
-                          border: chip.ok ? "1px solid #1d4029" : "1px solid #57272c",
-                          color: chip.ok ? "#6bd694" : "#ff8a8a",
+                          background: chip.ok ? "var(--ok-soft)" : "var(--err-soft)",
+                          border: chip.ok
+                            ? "1px solid var(--ok-soft)"
+                            : "1px solid var(--err-soft)",
+                          color: chip.ok ? "var(--ok)" : "var(--err)",
                         }}
                       >
                         {chip.ok ? "✓" : "✗"} {chip.label}
@@ -311,13 +313,13 @@ export function CopilotPanel({
                     {msg.didBatch && (
                       <button
                         onClick={() => dispatch({ type: "UNDO" })}
+                        className="dio-mono"
                         style={{
                           alignSelf: "flex-start",
                           background: "transparent",
                           border: "none",
-                          color: "#667",
+                          color: "var(--ink-3)",
                           fontSize: 10.5,
-                          fontFamily: MONO,
                           cursor: "pointer",
                           padding: "2px 0",
                           textDecoration: "underline",
@@ -334,14 +336,14 @@ export function CopilotPanel({
         ))}
 
         {busy && (
-          <p style={{ fontSize: 11.5, color: "#8090c0", fontFamily: MONO, padding: "2px 6px" }}>
+          <p className="dio-mono" style={{ fontSize: 11.5, color: "var(--ink-2)", padding: "2px 6px" }}>
             <ThinkingDots /> thinking
           </p>
         )}
       </div>
 
       {/* Input */}
-      <div style={{ padding: "10px 12px", borderTop: "1px solid #1a2535" }}>
+      <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -354,29 +356,14 @@ export function CopilotPanel({
             disabled={busy}
             onChange={(e) => setInput(e.target.value)}
             placeholder={busy ? "Working…" : "Ask the copilot…"}
-            style={{
-              flex: 1,
-              padding: "9px 10px",
-              background: "#0a111c",
-              border: "1px solid #1a2535",
-              borderRadius: 8,
-              color: "#e0e0e0",
-              fontSize: 12.5,
-              outline: "none",
-            }}
+            className="dio-input"
+            style={{ flex: 1 }}
           />
           <button
             type="submit"
             disabled={busy || !input.trim()}
-            style={{
-              padding: "0 14px",
-              background: busy || !input.trim() ? "#1a2535" : "#8090c0",
-              color: busy || !input.trim() ? "#556" : "#fff",
-              border: "none",
-              borderRadius: 8,
-              fontSize: 13,
-              cursor: busy || !input.trim() ? "default" : "pointer",
-            }}
+            className="dio-btn dio-btn-primary"
+            style={{ width: 32, padding: 0, flexShrink: 0 }}
           >
             ↑
           </button>
@@ -414,28 +401,6 @@ function SettingsCard({ clis, onDone }: { clis: { claude: boolean; codex: boolea
   const needsKey = !isCli && provider !== "ollama";
   const needsBaseUrl = provider === "openai-compatible" || provider === "ollama";
 
-  const label: React.CSSProperties = {
-    display: "block",
-    fontSize: 10,
-    color: "#556",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    margin: "10px 0 4px",
-    fontFamily: MONO,
-  };
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "8px 10px",
-    background: "#0a111c",
-    border: "1px solid #1a2535",
-    borderRadius: 6,
-    color: "#e0e0e0",
-    fontSize: 12,
-    fontFamily: MONO,
-    outline: "none",
-  };
-
   const save = async (thenTest: boolean) => {
     setSaving(true);
     setTestResult(null);
@@ -469,21 +434,21 @@ function SettingsCard({ clis, onDone }: { clis: { claude: boolean; codex: boolea
 
   return (
     <div style={{ padding: 16, overflowY: "auto" }}>
-      <h4 style={{ margin: "0 0 4px", fontSize: 11, color: "#8090c0", textTransform: "uppercase", letterSpacing: 0.8, fontFamily: MONO }}>
+      <h4 style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>
         Connect your AI
       </h4>
-      <p style={{ fontSize: 11.5, color: "#667", margin: "0 0 6px", lineHeight: 1.5 }}>
+      <p style={{ fontSize: 11.5, color: "var(--ink-2)", margin: "0 0 6px", lineHeight: 1.5 }}>
         Bring your own LLM — keys are stored locally in ~/.diorama and never leave your machine.
       </p>
 
-      <label style={label}>Provider</label>
+      <label className="dio-label" style={{ margin: "10px 0 4px" }}>Provider</label>
       <select
         value={provider}
         onChange={(e) => {
           setProvider(e.target.value as CopilotProviderConfig["provider"]);
           setTestResult(null);
         }}
-        style={{ ...inputStyle, cursor: "pointer" }}
+        className="dio-select"
       >
         {PROVIDERS.map((p) => {
           const detected =
@@ -498,18 +463,18 @@ function SettingsCard({ clis, onDone }: { clis: { claude: boolean; codex: boolea
 
       {needsKey && (
         <>
-          <label style={label}>API key</label>
+          <label className="dio-label" style={{ margin: "10px 0 4px" }}>API key</label>
           <input
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder={provider === "anthropic" ? "sk-ant-…" : "sk-…"}
-            style={inputStyle}
+            className="dio-input dio-mono"
           />
         </>
       )}
       {isCli && (
-        <p style={{ fontSize: 11, color: "#7a8", margin: "8px 0 0", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "8px 0 0", lineHeight: 1.5 }}>
           {provider === "claude-cli"
             ? "Runs your local `claude` CLI — uses the login and plan you already have. No key needed."
             : "Runs your local `codex` CLI — uses your ChatGPT login. No key needed."}
@@ -517,27 +482,27 @@ function SettingsCard({ clis, onDone }: { clis: { claude: boolean; codex: boolea
         </p>
       )}
       {provider === "codex-auth" && (
-        <p style={{ fontSize: 11, color: "#667", margin: "8px 0 0", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "8px 0 0", lineHeight: 1.5 }}>
           Advanced: raw token from ~/.codex/auth.json against a custom OpenAI-compatible base URL.
         </p>
       )}
 
-      <label style={label}>Model</label>
+      <label className="dio-label" style={{ margin: "10px 0 4px" }}>Model</label>
       <input
         value={model}
         onChange={(e) => setModel(e.target.value)}
         placeholder={MODEL_PLACEHOLDERS[provider]}
-        style={inputStyle}
+        className="dio-input dio-mono"
       />
 
       {needsBaseUrl && (
         <>
-          <label style={label}>Base URL</label>
+          <label className="dio-label" style={{ margin: "10px 0 4px" }}>Base URL</label>
           <input
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
             placeholder={provider === "ollama" ? "http://localhost:11434/v1" : "https://api.openai.com/v1"}
-            style={inputStyle}
+            className="dio-input dio-mono"
           />
         </>
       )}
@@ -546,44 +511,23 @@ function SettingsCard({ clis, onDone }: { clis: { claude: boolean; codex: boolea
         <button
           onClick={() => save(true)}
           disabled={saving}
-          style={{
-            flex: 1,
-            padding: "9px 0",
-            background: "#8090c0",
-            color: "#fff",
-            border: "none",
-            borderRadius: 7,
-            fontSize: 12.5,
-            fontWeight: 600,
-            cursor: saving ? "wait" : "pointer",
-          }}
+          className="dio-btn dio-btn-primary"
+          style={{ flex: 1 }}
         >
           {saving ? "Saving…" : "Save & test"}
         </button>
-        <button
-          onClick={() => save(false)}
-          disabled={saving}
-          style={{
-            padding: "9px 14px",
-            background: "transparent",
-            color: "#889",
-            border: "1px solid #2a3545",
-            borderRadius: 7,
-            fontSize: 12.5,
-            cursor: saving ? "wait" : "pointer",
-          }}
-        >
+        <button onClick={() => save(false)} disabled={saving} className="dio-btn">
           Save
         </button>
       </div>
 
       {testResult && (
         <p
+          className="dio-mono"
           style={{
             marginTop: 10,
             fontSize: 11.5,
-            fontFamily: MONO,
-            color: testResult.ok ? "#6bd694" : "#ff8a8a",
+            color: testResult.ok ? "var(--ok)" : "var(--err)",
             wordBreak: "break-word",
           }}
         >

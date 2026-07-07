@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+// Theme preview colors are theme data (what the 3D world will look like),
+// not UI chrome — intentionally not design tokens.
 const THEMES = [
   { type: "neon-dark", label: "Sci-Fi", bg: "#0e1520", accent: "#8090c0", desc: "Dark with neon glows" },
   { type: "warm-office", label: "Modern Office", bg: "#2a2420", accent: "#d4a574", desc: "Warm beige and wood tones" },
@@ -15,13 +17,36 @@ interface ThemeStepProps {
   compact?: boolean;
 }
 
+function ThemeSwatch({ bg, accent, selected }: { bg: string; accent: string; selected: boolean }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: bg,
+        border: "1px solid var(--border)",
+        boxShadow: selected ? "0 0 0 2px var(--accent)" : "none",
+        transition: "box-shadow var(--t-fast) var(--ease)",
+      }}
+    >
+      <span style={{ width: 8, height: 8, borderRadius: 2, background: accent }} />
+    </span>
+  );
+}
+
 export function ThemeStep({ onNext, onBack, compact }: ThemeStepProps) {
   const [selected, setSelected] = useState("neon-dark");
 
   if (compact) {
     return (
       <div>
-        <h4 style={{ margin: "0 0 12px", fontSize: 13, color: "#999" }}>Theme</h4>
+        <h4 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>Theme</h4>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {THEMES.map((theme) => (
             <button
@@ -30,20 +55,18 @@ export function ThemeStep({ onNext, onBack, compact }: ThemeStepProps) {
                 setSelected(theme.type);
                 onNext(theme.type);
               }}
+              className="dio-card dio-card-interactive"
+              data-selected={selected === theme.type}
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
                 padding: "10px 12px",
-                background: theme.bg,
-                border: selected === theme.type ? `2px solid ${theme.accent}` : "2px solid #2a3545",
-                borderRadius: 8,
-                cursor: "pointer",
                 textAlign: "left",
               }}
             >
-              <div style={{ width: 14, height: 14, borderRadius: 3, background: theme.accent, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, color: theme.type === "minimal" ? "#333" : "#e0e0e0" }}>
+              <ThemeSwatch bg={theme.bg} accent={theme.accent} selected={selected === theme.type} />
+              <span style={{ fontSize: 13, fontWeight: 550, color: "var(--ink)" }}>
                 {theme.label}
               </span>
             </button>
@@ -54,9 +77,11 @@ export function ThemeStep({ onNext, onBack, compact }: ThemeStepProps) {
   }
 
   return (
-    <div style={{ maxWidth: 520 }}>
-      <h2>Choose a Theme</h2>
-      <p style={{ color: "#999", marginBottom: 24 }}>
+    <div style={{ maxWidth: 560 }}>
+      <h1 style={{ fontSize: 20, fontWeight: 650, margin: "0 0 6px", letterSpacing: "-0.01em" }}>
+        Choose a theme
+      </h1>
+      <p style={{ fontSize: 13, color: "var(--ink-2)", margin: "0 0 24px" }}>
         This sets the visual style of your 3D workspace.
       </p>
 
@@ -65,56 +90,29 @@ export function ThemeStep({ onNext, onBack, compact }: ThemeStepProps) {
           <button
             key={theme.type}
             onClick={() => setSelected(theme.type)}
-            style={{
-              padding: 16,
-              background: theme.bg,
-              border: selected === theme.type ? `2px solid ${theme.accent}` : "2px solid #333",
-              borderRadius: 8,
-              cursor: "pointer",
-              textAlign: "left",
-              transition: "border-color 0.15s",
-            }}
+            className="dio-card dio-card-interactive"
+            data-selected={selected === theme.type}
+            style={{ padding: 16, textAlign: "left" }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <div style={{ width: 16, height: 16, borderRadius: 4, background: theme.accent }} />
-              <span style={{ fontWeight: 600, color: theme.type === "minimal" ? "#333" : "#e0e0e0" }}>
-                {theme.label}
-              </span>
+              <ThemeSwatch bg={theme.bg} accent={theme.accent} selected={selected === theme.type} />
+              <span style={{ fontWeight: 550, color: "var(--ink)" }}>{theme.label}</span>
             </div>
-            <p style={{ margin: 0, fontSize: 12, color: theme.type === "minimal" ? "#666" : "#999" }}>
-              {theme.desc}
-            </p>
+            <p style={{ margin: 0, fontSize: 12, color: "var(--ink-2)" }}>{theme.desc}</p>
           </button>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-        {onBack && <button onClick={onBack} style={buttonSecondary}>Back</button>}
-        <button onClick={() => onNext(selected)} style={buttonPrimary}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
+        {onBack && (
+          <button onClick={onBack} className="dio-btn dio-btn-ghost">
+            Back
+          </button>
+        )}
+        <button onClick={() => onNext(selected)} className="dio-btn dio-btn-primary">
           Next
         </button>
       </div>
     </div>
   );
 }
-
-const buttonPrimary: React.CSSProperties = {
-  padding: "10px 24px",
-  background: "#8090c0",
-  color: "#fff",
-  border: "none",
-  borderRadius: 6,
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonSecondary: React.CSSProperties = {
-  padding: "10px 24px",
-  background: "transparent",
-  color: "#8090c0",
-  border: "1px solid #8090c0",
-  borderRadius: 6,
-  fontSize: 14,
-  cursor: "pointer",
-};

@@ -74,7 +74,7 @@ npx next build        # app build (from packages/app)
 ## Conventions
 
 - All app components use `"use client"` directive
-- Inline styles throughout (no Tailwind, no CSS modules)
+- Design system: tokens + dio-* classes in app/globals.css (see DESIGN.md); className for vocabulary, inline styles for layout only, var(--…) for colors — no hex literals in components
 - Dark theme: `#0d1520` backgrounds, `#1a2535` borders, `#8090c0` accents
 - Engine exports pure functions; React/Three.js code lives only in `packages/app`
 - Monospace font: `'SF Mono', 'Fira Code', monospace`
@@ -112,6 +112,17 @@ npx next build        # app build (from packages/app)
 - `packages/ui/src/builderStore.ts` — Reducer + undo/redo (12 action types)
 
 ## Changelog
+
+### 2026-07-07 — UI redesign: precision-instrument design system
+
+Full visual redesign after user feedback ("looks like divs thrown together"). Direction chosen via interview: precision instrument, Figma-grade, dark. PRODUCT.md + DESIGN.md added at repo root — read them before any UI work.
+
+- **Design tokens** (`app/globals.css`) — OKLCH palette on CSS variables (--bg/--surface/--surface-2/--border/--ink/--ink-2/--ink-3/--accent family/--ok/--err), type scale (13px UI base, 11px labels, 450/550/650 weights), radii, motion (--ease ease-out-quint, 150/200ms), semantic z-scale, reduced-motion collapse.
+- **Component vocabulary** — `dio-btn` (+primary/ghost/danger/sm), `dio-input`/`dio-select` (custom chevron, focus ring), `dio-card` (+interactive with data-selected), `dio-tab` (underline, data-active), `dio-label`, `dio-kbd`, `dio-mono` (tabular-nums), `dio-fade-in`/`dio-pulse`. Rule: className for vocabulary, inline styles for layout only, var(--…) for every color.
+- **Wizard shell** — 48px app bar (◆ Diorama wordmark · stepper with ✓-completed states and connecting lines · contextual hint), steps fade in, flow steps in a centered 480–560px column with 20px/650 headings.
+- **All surfaces swept** (17 files): ConnectStep detection cards with glyph tiles + skeleton loading, ProToolbar segmented 2D|3D + kbd hint chips, preset palette glyph rows, inspector with dio-mono numerics, copilot bubbles (accent-soft user / surface-2 assistant), agent cards, launch definition-list summary, dashboard tiles, live-view switcher, onboarding tour.
+- Browser-verified: all 4 wizard steps + builder screenshot-reviewed.
+- Per-agent identity colors and 3D theme preview swatches intentionally stay as data values, not tokens.
 
 ### 2026-07-07 — Local-CLI copilot providers (no API key)
 

@@ -43,6 +43,7 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
 
   return (
     <div
+      className="dio-card"
       style={{
         position: "absolute",
         bottom: 12,
@@ -50,9 +51,8 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
         zIndex: 10,
         width: 340,
         maxHeight: 280,
-        background: "rgba(13,21,32,0.85)",
-        borderRadius: 8,
-        border: "1px solid rgba(128,144,192,0.15)",
+        background: "color-mix(in oklab, var(--surface) 85%, transparent)",
+        backdropFilter: "blur(8px)",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
@@ -63,12 +63,10 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
         style={{
           padding: "8px 12px",
           fontSize: 11,
-          fontFamily: "'SF Mono', 'Fira Code', monospace",
-          color: "#8090c0",
-          borderBottom: "1px solid rgba(128,144,192,0.1)",
-          fontWeight: 600,
-          letterSpacing: "0.05em",
-          textTransform: "uppercase",
+          fontWeight: 550,
+          letterSpacing: "0.02em",
+          color: "var(--ink-2)",
+          borderBottom: "1px solid var(--border)",
         }}
       >
         Activity
@@ -87,13 +85,13 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
         {entries.map((entry) => (
           <div
             key={entry.id}
+            className="dio-mono"
             style={{
               padding: "4px 12px",
               display: "flex",
               alignItems: "flex-start",
               gap: 8,
               fontSize: 11,
-              fontFamily: "'SF Mono', 'Fira Code', monospace",
               lineHeight: 1.4,
             }}
           >
@@ -110,13 +108,13 @@ export function ActivityFeed({ entries }: ActivityFeedProps) {
               }}
             />
             {/* Label */}
-            <span style={{ color: "#c0c8e0", flex: 1 }}>
+            <span style={{ color: "var(--ink-2)", flex: 1 }}>
               {entry.label}
             </span>
             {/* Timestamp */}
             <span
               style={{
-                color: "rgba(128,144,192,0.4)",
+                color: "var(--ink-3)",
                 fontSize: 10,
                 flexShrink: 0,
                 marginTop: 1,

@@ -73,7 +73,7 @@ export default function Home() {
   return (
     <div style={{ display: "flex", height: "100vh" }}>
       <div style={{ flex: 1, position: "relative" }}>
-        {/* View switcher */}
+        {/* View switcher — segmented control (matches ProToolbar's 2D|3D) */}
         <div
           style={{
             position: "absolute",
@@ -81,10 +81,11 @@ export default function Home() {
             right: 12,
             zIndex: 20,
             display: "flex",
-            background: "rgba(10,17,28,0.85)",
-            border: "1px solid #1a2535",
-            borderRadius: 7,
-            overflow: "hidden",
+            padding: 2,
+            background: "color-mix(in oklab, var(--surface) 90%, transparent)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
           }}
         >
           {(["3d-office", "dashboard"] as const).map((v) => (
@@ -92,13 +93,14 @@ export default function Home() {
               key={v}
               onClick={() => setView(v)}
               style={{
-                padding: "6px 12px",
-                background: view === v ? "#1a2535" : "transparent",
-                color: view === v ? "#e0e0e0" : "#667",
+                padding: "3px 12px",
+                background: view === v ? "var(--surface-3)" : "transparent",
+                color: view === v ? "var(--ink)" : "var(--ink-2)",
                 border: "none",
-                fontSize: 11,
-                fontFamily: "'SF Mono', 'Fira Code', monospace",
-                cursor: "pointer",
+                borderRadius: 4,
+                fontSize: 12,
+                fontWeight: 550,
+                transition: "background var(--t-fast) var(--ease), color var(--t-fast) var(--ease)",
               }}
             >
               {v === "3d-office" ? "3D" : "Dashboard"}

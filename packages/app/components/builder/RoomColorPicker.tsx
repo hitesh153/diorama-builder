@@ -29,7 +29,7 @@ export function RoomColorPicker({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <h5 style={{ margin: 0, fontSize: 12, color: "#999" }}>Room Colors</h5>
+      <h5 style={{ margin: 0, fontSize: 11, fontWeight: 550, letterSpacing: "0.02em", color: "var(--ink-2)" }}>Room colors</h5>
 
       <ColorRow
         label="Accent"
@@ -53,16 +53,8 @@ export function RoomColorPicker({
       {hasOverrides && (
         <button
           onClick={() => onChange(undefined)}
-          style={{
-            marginTop: 4,
-            padding: "6px 0",
-            background: "transparent",
-            color: "#8090c0",
-            border: "1px solid #2a3545",
-            borderRadius: 6,
-            fontSize: 11,
-            cursor: "pointer",
-          }}
+          className="dio-btn dio-btn-sm"
+          style={{ marginTop: 4, width: "100%" }}
         >
           Reset to theme defaults
         </button>
@@ -92,17 +84,17 @@ function ColorRow({
           width: 28,
           height: 28,
           padding: 0,
-          border: isOverride ? "2px solid #8090c0" : "2px solid #2a3545",
+          border: isOverride ? "2px solid var(--accent)" : "2px solid var(--border)",
           borderRadius: 6,
           background: "transparent",
           cursor: "pointer",
         }}
       />
-      <span style={{ fontSize: 12, color: isOverride ? "#e0e0e0" : "#666", flex: 1 }}>
+      <span style={{ fontSize: 12, color: isOverride ? "var(--ink)" : "var(--ink-3)", flex: 1 }}>
         {label}
       </span>
       {isOverride && (
-        <span style={{ fontSize: 10, color: "#8090c0" }}>custom</span>
+        <span style={{ fontSize: 11, color: "var(--accent)" }}>custom</span>
       )}
     </label>
   );
